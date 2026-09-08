@@ -1,0 +1,6 @@
+{
+  "name": "yt-transcript-backend",
+  "version": "1.0.0",
+  "description": "Vercel serverless function：輸入YouTube連結，回傳純文字逐字稿，供「內容特工隊」爆款拆解模組使用。",
+  "private": true
+}

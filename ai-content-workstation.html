@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>內容特工隊｜AI內容獲客工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --ink:#12192B;
+    --paper:#F3EFE3;
+    --accent:#F0B429;
+    --accent-dark:#C98A1A;
+    --card-gold:#F3DFB0;
+    --card-teal:#BFDEDC;
+    --card-rose:#F0D2D9;
+    --card-lavender:#D9D6ED;
+    --card-sage:#D2E3CE;
+    --card-sky:#CDE1EF;
+  }
+  body{ font-family:'Noto Sans TC', sans-serif; background:var(--paper); }
+  .display{ font-family:'Space Grotesk','Noto Sans TC', sans-serif; }
+  .card-gold{ background:var(--card-gold); }
+  .card-teal{ background:var(--card-teal); }
+  .card-rose{ background:var(--card-rose); }
+  .card-lavender{ background:var(--card-lavender); }
+  .card-sage{ background:var(--card-sage); }
+  .card-sky{ background:var(--card-sky); }
+  .nav-item{ transition: all .15s ease; }
+  .nav-item:hover{ background:rgba(255,255,255,0.06); }
+  .nav-item.active{ background:var(--accent); color:var(--ink); font-weight:700; }
+  .scrollbar-thin::-webkit-scrollbar{ width:6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb{ background:#33405C; border-radius:3px; }
+  .card-note{ box-shadow: 4px 4px 0px rgba(18,25,43,0.9); border:1.5px solid var(--ink); }
+  .btn-primary{ background:var(--accent); color:var(--ink); font-weight:700; border:1.5px solid var(--ink); box-shadow:3px 3px 0px var(--ink); transition: all .12s ease; }
+  .btn-primary:hover{ transform: translate(1px,1px); box-shadow:2px 2px 0px var(--ink); }
+  .btn-primary:active{ transform: translate(3px,3px); box-shadow:0px 0px 0px var(--ink); }
+  .btn-primary:disabled{ opacity:.5; cursor:not-allowed; }
+  .field-input{ border:1.5px solid var(--ink); background:#fff; }
+  .field-input:focus{ outline:none; box-shadow: 0 0 0 3px rgba(240,180,41,0.45); }
+  .fade-in{ animation: fadeIn .25s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  .loading-dot{ animation: pulse 1s infinite ease-in-out; }
+  @keyframes pulse{ 0%,100%{opacity:.3;} 50%{opacity:1;} }
+  .prose-output{ white-space:pre-wrap; line-height:1.85; }
+</style>
+</head>
+<body class="text-[#12192B]">
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="w-64 shrink-0 bg-[#12192B] text-[#E9E6DC] flex flex-col h-full">
+    <div class="px-5 pt-6 pb-5 flex items-center gap-3 border-b border-white/10">
+      <div class="w-9 h-9 rounded-md bg-[var(--accent)] flex items-center justify-center text-[#12192B] font-black display text-sm">◎</div>
+      <div>
+        <div class="font-bold text-[15px] leading-tight">內容特工隊</div>
+        <div class="text-[11px] text-white/40 mt-0.5">一人品牌，AI大軍團</div>
+      </div>
+    </div>
+
+    <nav id="sidebar-nav" class="flex-1 overflow-y-auto scrollbar-thin px-3 py-4 space-y-5 text-[13.5px]"></nav>
+
+    <div class="px-4 py-3 border-t border-white/10">
+      <button id="btn-brand-setting" class="nav-item w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2 text-white/70 hover:text-white">
+        <span>⚙️</span><span>品牌語氣設定</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <main class="flex-1 h-full overflow-y-auto scrollbar-thin">
+    <div class="max-w-5xl mx-auto px-8 py-8" id="main-content"></div>
+  </main>
+</div>
+
+<!-- ===================== MODAL: 品牌設定 ===================== -->
+<div id="brand-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 card-note">
+    <div class="flex items-center justify-between mb-1">
+      <h3 class="text-lg font-black display">品牌語氣設定</h3>
+      <button onclick="closeBrandModal()" class="text-2xl leading-none">&times;</button>
+    </div>
+    <p class="text-xs text-[#555] mb-4">填一次，之後所有生成模組都會自動套用你的品牌背景與語氣，讓輸出更一致。</p>
+    <div class="space-y-3">
+      <div>
+        <label class="text-xs font-bold">IP / 品牌名稱</label>
+        <input id="b-name" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：daxing 線上課程工作室">
+      </div>
+      <div>
+        <label class="text-xs font-bold">產業 / 專業領域</label>
+        <input id="b-industry" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：自媒體經營、內容變現教學">
+      </div>
+      <div>
+        <label class="text-xs font-bold">目標受眾</label>
+        <input id="b-audience" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：25-40歲想經營副業的上班族">
+      </div>
+      <div>
+        <label class="text-xs font-bold">語氣風格</label>
+        <input id="b-tone" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：專業但親切、像朋友分享實戰經驗">
+      </div>
+    </div>
+    <button onclick="saveBrand()" class="btn-primary w-full rounded-lg py-2.5 mt-5 text-sm">儲存設定</button>
+  </div>
+</div>
+
+<!-- ===================== MODAL: 歷史紀錄詳情 ===================== -->
+<div id="history-detail-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl max-w-xl w-full p-6 card-note max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-1">
+      <h3 id="hist-detail-title" class="text-base font-black display pr-4">紀錄內容</h3>
+      <button onclick="closeHistoryDetail()" class="text-2xl leading-none shrink-0">&times;</button>
+    </div>
+    <div id="hist-detail-time" class="text-[11px] text-[#999] mb-4"></div>
+    <div id="hist-detail-content" class="text-sm prose-output text-[#222]"></div>
+    <div class="flex items-center gap-4 mt-5">
+      <button id="hist-detail-copy" class="text-xs underline font-bold">複製內容</button>
+      <button id="hist-detail-delete" class="text-xs underline font-bold text-[#B0433F]">刪除這筆紀錄</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: 選題詳情 ===================== -->
+<div id="topic-detail-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+  <div class="bg-white rounded-2xl max-w-xl w-full p-6 card-note max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-1">
+      <h3 id="topic-detail-title" class="text-base font-black display pr-4">選題內容</h3>
+      <button onclick="closeTopicDetail()" class="text-2xl leading-none shrink-0">&times;</button>
+    </div>
+    <div id="topic-detail-type" class="text-[11px] inline-block px-2 py-0.5 rounded-full bg-[var(--card-teal)] mb-4"></div>
+    <div id="topic-detail-content" class="text-sm prose-output text-[#222]"></div>
+    <button id="topic-detail-select-btn" class="btn-primary rounded-lg px-4 py-2 text-sm mt-5">加入已選</button>
+  </div>
+</div>
+
+<!-- ===================== 浮動狀態列：選題策劃選擇狀態 ===================== -->
+<div id="topic-status-bar" class="hidden fixed bottom-0 left-64 right-0 bg-[#12192B] text-white px-6 py-3.5 flex items-center justify-between gap-4 z-40" style="box-shadow:0 -4px 14px rgba(0,0,0,0.18);">
+  <div class="text-sm">已選擇 <span id="topic-selected-count" class="font-bold text-[var(--accent)]">0</span> / <span id="topic-total-count">0</span> 個選題</div>
+  <div class="flex items-center gap-3">
+    <button id="topic-clear-btn" class="px-4 py-2 rounded-lg bg-white/10 text-white/60 text-sm hover:bg-white/20 transition">取消選擇</button>
+    <button id="topic-handoff-btn" class="btn-primary px-4 py-2 rounded-lg text-sm">交給文案部門 →</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   品牌設定（全域狀態，非 localStorage，僅存於本次瀏覽）
+   ============================================================ */
+let brandProfile = { name:'', industry:'', audience:'', tone:'' };
+
+function openBrandModal(){ document.getElementById('brand-modal').classList.remove('hidden'); }
+function closeBrandModal(){ document.getElementById('brand-modal').classList.add('hidden'); }
+function saveBrand(){
+  brandProfile.name = document.getElementById('b-name').value;
+  brandProfile.industry = document.getElementById('b-industry').value;
+  brandProfile.audience = document.getElementById('b-audience').value;
+  brandProfile.tone = document.getElementById('b-tone').value;
+  closeBrandModal();
+  renderBrandBanner();
+}
+document.getElementById('btn-brand-setting').addEventListener('click', openBrandModal);
+
+function brandContextString(){
+  const p = brandProfile;
+  if(!p.name && !p.industry && !p.audience && !p.tone) return '';
+  return `【品牌背景資訊，請在生成內容時自然融入】\n品牌/IP名稱：${p.name||'未填'}\n產業領域：${p.industry||'未填'}\n目標受眾：${p.audience||'未填'}\n語氣風格：${p.tone||'未填'}\n`;
+}
+
+/* 依據其他欄位的值，動態顯示/隱藏標記了 showIf 的欄位（例如：CTA選特定選項才出現的欄位） */
+function wireShowIfFields(){
+  document.querySelectorAll('.field-wrap[data-show-if-key]').forEach(wrap=>{
+    const key = wrap.getAttribute('data-show-if-key');
+    const val = wrap.getAttribute('data-show-if-value');
+    const controller = document.getElementById('f-' + key);
+    if(!controller) return;
+    const update = ()=>{ wrap.classList.toggle('hidden', controller.value !== val); };
+    controller.addEventListener('change', update);
+    controller.addEventListener('input', update);
+    update();
+  });
+}
+
+/* 「✨ 根據OO生成範例」按鈕：抓另一個欄位的值，用AI快速生成一段範例文字填入這個欄位 */
+function wireAutoSuggestFields(mod){
+  document.querySelectorAll('.auto-suggest-btn').forEach(btn=>{
+    const key = btn.getAttribute('data-key');
+    const field = mod.fields.find(f => f.key === key);
+    if(!field) return;
+    btn.addEventListener('click', ()=> runAutoSuggest(mod, field, btn));
+  });
+}
+
+async function runAutoSuggest(mod, field, btn){
+  const sourceField = mod.fields.find(f => f.key === field.autoSuggestFrom);
+  const sourceInput = document.getElementById('f-' + field.autoSuggestFrom);
+  const sourceVal = sourceInput ? sourceInput.value.trim() : '';
+  if(!sourceVal){
+    showToast(`請先填寫「${sourceField ? sourceField.label : field.autoSuggestFrom}」`);
+    return;
+  }
+  const targetInput = document.getElementById('f-' + field.key);
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+
+  const promptText = `你是內容策略顧問。${brandContextString()}
+${sourceField ? sourceField.label : '主題'}：${sourceVal}
+
+請針對這個主題，直接給出「${field.label}」的具體範例內容（1-2句話、實際可用，不要說明性文字、不要加任何前綴、開場白或引號，直接給內容本身）。`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 250,
+        messages: [{ role: "user", content: promptText }]
+      })
+    });
+    const data = await response.json();
+    const text = (data.content || []).map(b=>b.text || '').join('\n').trim();
+    if(targetInput && text){
+      targetInput.value = text;
+      targetInput.classList.add('fade-in');
+    }else{
+      showToast('沒有取得範例內容，請再試一次。');
+    }
+  }catch(err){
+    showToast('生成範例失敗，請稍後再試。');
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+/* 爆款拆解：貼上連結自動抓取（YouTube／TikTok用官方oEmbed，瀏覽器直接可抓，不需金鑰） */
+async function runBreakdownLinkFetch(){
+  const linkInput = document.getElementById('bd-link');
+  const statusEl = document.getElementById('bd-fetch-status');
+  const contentArea = document.getElementById('f-content');
+  const url = (linkInput.value || '').trim();
+
+  if(!url){
+    statusEl.textContent = '請先貼上連結。';
+    return;
+  }
+
+  const isYouTube = /youtube\.com|youtu\.be/i.test(url);
+  const isTikTok = /tiktok\.com/i.test(url);
+
+  if(/instagram\.com/i.test(url)){
+    statusEl.textContent = 'Instagram目前不支援自動抓取（平台限制需登入），請直接複製貼文文字內容到下方欄位。';
+    return;
+  }
+  if(/xiaohongshu\.com|xhslink\.com/i.test(url)){
+    statusEl.textContent = '小紅書目前不支援自動抓取（無公開介面），請直接複製筆記文字內容到下方欄位。';
+    return;
+  }
+  if(/threads\.net/i.test(url)){
+    statusEl.textContent = 'Threads目前不支援自動抓取（平台限制），請直接複製貼文文字內容到下方欄位。';
+    return;
+  }
+  if(!isYouTube && !isTikTok){
+    statusEl.textContent = '無法辨識這個連結的平台，請直接複製文字內容到下方欄位。';
+    return;
+  }
+
+  // YouTube且已設定後端服務網址：優先嘗試抓完整逐字稿
+  if(isYouTube && ytBackendUrl){
+    statusEl.textContent = '正在向逐字稿服務請求完整逐字稿，請稍候...';
+    try{
+      const res = await fetch(`${ytBackendUrl}/api/transcript?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+      if(res.ok && data.transcript){
+        contentArea.value = data.transcript;
+        contentArea.classList.add('fade-in');
+        statusEl.textContent = `✓ 已抓到完整逐字稿（語言：${data.language || '未知'}${data.isAutoGenerated ? '，YouTube自動產生字幕' : ''}），可以直接產生分析，或先自行編修。`;
+        return;
+      }else{
+        statusEl.textContent = `逐字稿服務回應：${data.error || '抓取失敗'}。改用標題等基本資訊。`;
+      }
+    }catch(err){
+      console.error(err);
+      statusEl.textContent = '無法連線到逐字稿服務（請確認網址是否正確、後端是否已成功部署）。改用標題等基本資訊。';
+    }
+  }
+
+  // 退回oEmbed：抓標題／作者等基本metadata
+  const oembedUrl = isYouTube
+    ? `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+    : `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+  const platformName = isYouTube ? 'YouTube' : 'TikTok';
+
+  try{
+    const res = await fetch(oembedUrl);
+    if(!res.ok) throw new Error('oEmbed fetch failed: ' + res.status);
+    const data = await res.json();
+
+    const pieces = [];
+    if(data.title) pieces.push(`標題／文案：${data.title}`);
+    if(data.author_name) pieces.push(`創作者：${data.author_name}`);
+
+    if(pieces.length && contentArea){
+      contentArea.value = pieces.join('\n');
+      contentArea.classList.add('fade-in');
+      const tip = isYouTube && !ytBackendUrl ? '（如果想抓完整逐字稿，可以在上方展開「逐字稿後端服務設定」填入你部署的網址）' : '';
+      statusEl.textContent = `✓ 已從${platformName}抓到標題等基本資訊。這只是公開metadata，不含完整字幕／留言，建議你再補充貼上實際文案或口白內容，分析會更準確。${tip}`;
+    }else{
+      statusEl.textContent = '抓取成功，但沒有可用的文字內容，請直接貼上文字內容。';
+    }
+  }catch(err){
+    statusEl.textContent = `抓取失敗，可能是連結格式錯誤或該則內容非公開，請直接複製文字內容到下方欄位。`;
+    console.error(err);
+  }
+}
+
+/* ============================================================
+   歷史紀錄（全域最多保留100筆，依模組分別分頁顯示，每頁10筆）
+   ============================================================ */
+let historyRecords = []; // 最新的在最前面
+let ytBackendUrl = ''; // 使用者自建的YouTube逐字稿後端服務網址（選填）
+const historyPageByModule = {};
+const HISTORY_PAGE_SIZE = 10;
+const HISTORY_MAX = 100;
+
+function formatHistTime(d){
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function addHistoryRecord(mod, values, text){
+  const primaryField = mod.fields[0];
+  const subtitle = primaryField ? (values[primaryField.key] || values.link || '').slice(0, 28) : '';
+  const record = {
+    id: 'h' + Date.now() + Math.random().toString(36).slice(2, 7),
+    moduleKey: currentKey,
+    moduleTitle: mod.title,
+    subtitle,
+    content: text,
+    time: new Date(),
+    status: 'generated',   // generated | saved | scheduled | published
+    publishDate: ''
+  };
+  historyRecords.unshift(record);
+  if(historyRecords.length > HISTORY_MAX){
+    historyRecords = historyRecords.slice(0, HISTORY_MAX);
+  }
+}
+
+function renderHistorySection(mod){
+  const container = document.getElementById('history-section');
+  if(!container) return;
+  const key = currentKey;
+  const records = historyRecords.filter(r => r.moduleKey === key);
+
+  if(records.length === 0){
+    container.innerHTML = `<div class="text-xs text-[#999] bg-white/50 border border-dashed border-[#0000001f] rounded-xl px-4 py-6 text-center">目前這個模組還沒有生成紀錄，生成後會顯示在這裡。</div>`;
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(records.length / HISTORY_PAGE_SIZE));
+  if(!historyPageByModule[key] || historyPageByModule[key] > totalPages) historyPageByModule[key] = 1;
+  const page = historyPageByModule[key];
+  const start = (page - 1) * HISTORY_PAGE_SIZE;
+  const pageItems = records.slice(start, start + HISTORY_PAGE_SIZE);
+
+  const rows = pageItems.map(r => `
+    <div class="history-row flex items-center gap-2">
+      <button class="history-title-btn flex-1 text-left px-4 py-3 bg-white rounded-lg border border-[#12192B]/15 hover:border-[var(--accent)] transition flex items-center justify-between gap-3 min-w-0" data-id="${r.id}">
+        <span class="text-sm font-medium truncate">${escapeHtml(r.subtitle || r.moduleTitle)}</span>
+        <span class="text-[11px] text-[#999] shrink-0">${formatHistTime(r.time)}</span>
+      </button>
+      <button class="history-delete-btn shrink-0 w-9 h-[42px] flex items-center justify-center rounded-lg border border-[#12192B]/15 text-[#B0433F] hover:bg-[#B0433F] hover:text-white transition" data-id="${r.id}" title="刪除這筆紀錄">🗑️</button>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="space-y-2">${rows}</div>
+    <div class="flex items-center justify-between mt-3 text-xs text-[#666]">
+      <span>共 ${records.length} 筆</span>
+      <div class="flex items-center gap-3">
+        <button id="hist-prev" class="px-2.5 py-1 rounded border border-[#12192B]/20 ${page<=1?'opacity-30 pointer-events-none':''}">‹ 上一頁</button>
+        <span>第 ${page} / ${totalPages} 頁</span>
+        <button id="hist-next" class="px-2.5 py-1 rounded border border-[#12192B]/20 ${page>=totalPages?'opacity-30 pointer-events-none':''}">下一頁 ›</button>
+      </div>
+    </div>
+  `;
+
+  container.querySelectorAll('.history-title-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openHistoryDetail(btn.getAttribute('data-id')));
+  });
+  container.querySelectorAll('.history-delete-btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      deleteHistoryRecord(btn.getAttribute('data-id'), mod);
+    });
+  });
+  const prevBtn = document.getElementById('hist-prev');
+  const nextBtn = document.getElementById('hist-next');
+  if(prevBtn) prevBtn.addEventListener('click', ()=>{ historyPageByModule[key] = Math.max(1, page-1); renderHistorySection(mod); });
+  if(nextBtn) nextBtn.addEventListener('click', ()=>{ historyPageByModule[key] = Math.min(totalPages, page+1); renderHistorySection(mod); });
+}
+
+function deleteHistoryRecord(id, mod){
+  const idx = historyRecords.findIndex(r => r.id === id);
+  if(idx === -1) return;
+  historyRecords.splice(idx, 1);
+  renderHistorySection(mod);
+}
+
+function openHistoryDetail(id){
+  const r = historyRecords.find(x => x.id === id);
+  if(!r) return;
+  document.getElementById('hist-detail-title').textContent = r.moduleTitle + (r.subtitle ? '｜' + r.subtitle : '');
+  document.getElementById('hist-detail-time').textContent = formatHistTime(r.time);
+  document.getElementById('hist-detail-content').textContent = r.content;
+  document.getElementById('history-detail-modal').classList.remove('hidden');
+  const copyBtn = document.getElementById('hist-detail-copy');
+  copyBtn.textContent = '複製內容';
+  copyBtn.onclick = ()=>{
+    navigator.clipboard.writeText(r.content);
+    copyBtn.textContent = '已複製 ✓';
+    setTimeout(()=> copyBtn.textContent = '複製內容', 1500);
+  };
+  const deleteBtn = document.getElementById('hist-detail-delete');
+  deleteBtn.onclick = ()=>{
+    const mod = MODULES[currentKey];
+    deleteHistoryRecord(r.id, mod);
+    closeHistoryDetail();
+  };
+}
+function closeHistoryDetail(){
+  document.getElementById('history-detail-modal').classList.add('hidden');
+}
+
+/* ============================================================
+   導覽結構
+   ============================================================ */
+/* ============================================================
+   選題策劃：批次生成選題、勾選、交給文案部門
+   ============================================================ */
+const COPY_MODULE_KEYS = new Set(['xhs','igpost','igreels','igstory','igcarousel','threads','yt','email']);
+const TOPIC_BATCH_MAX_SELECT = 5;
+let topicBatchItems = [];      // 目前生成的這批選題
+let selectedTopicIds = new Set(); // 目前勾選中的選題id（此頁面內）
+let handoffTopics = [];        // 交給文案部門後，帶著走的選題
+
+const NAV = [
+  { section:'', items:[
+    {key:'home', label:'首頁', icon:'🏠'},
+  ]},
+  { section:'IP定位入口', items:[
+    {key:'positioning', label:'定位顧問', icon:'◎'},
+    {key:'monetization', label:'變現診斷', icon:'◎'},
+    {key:'platform', label:'平台策略', icon:'◎'},
+  ]},
+  { section:'選題部門', items:[
+    {key:'radar', label:'靈感雷達', icon:'📡'},
+    {key:'breakdown', label:'爆款拆解', icon:'🔍'},
+    {key:'topicplan', label:'選題策略', icon:'🗂️'},
+    {key:'topicbatch', label:'選題策劃', icon:'📋'},
+  ]},
+  { section:'文案部門', items:[
+    {key:'xhs', label:'小紅書筆記手', icon:'📕'},
+    {key:'ig-group', label:'IG', icon:'📷', submenu:[
+      {key:'igpost', label:'IG貼文文案手', icon:'📝'},
+      {key:'igreels', label:'IG Reels腳本手', icon:'🎞️'},
+      {key:'igstory', label:'IG限動互動手', icon:'⭕'},
+      {key:'igcarousel', label:'IG圖文卡手', icon:'🗂️'},
+    ]},
+    {key:'threads', label:'Threads互動手', icon:'🧵'},
+    {key:'yt', label:'YouTube腳本手', icon:'▶️'},
+    {key:'email', label:'Email轉化手', icon:'✉️'},
+  ]},
+  { section:'視覺部門', items:[
+    {key:'cover', label:'封面設計手', icon:'🎨'},
+    {key:'storyboard', label:'短影音分鏡手', icon:'🎬'},
+    {key:'imgprompt', label:'AI圖像提示詞手', icon:'🖼️'},
+  ]},
+  { section:'獲客轉化部門', items:[
+    {key:'hook', label:'引流鉤子設計', icon:'🧲'},
+    {key:'privateD', label:'私域經營手', icon:'💌'},
+    {key:'sales', label:'銷售成交話術手', icon:'💬'},
+    {key:'landing', label:'落地頁文案手', icon:'📄'},
+  ]},
+  { section:'數據成效部門', items:[
+    {key:'contentdiag', label:'內容成效診斷', icon:'📊'},
+    {key:'abtest', label:'A/B測試建議手', icon:'🧪'},
+    {key:'caccalc', label:'獲客成本試算', icon:'🧮'},
+  ]},
+];
+
+let currentKey = 'home';
+const openSubmenus = { 'ig-group': false };
+
+function isChildActive(it){
+  return it.submenu && it.submenu.some(c=>c.key===currentKey);
+}
+
+function renderSidebar(){
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+  NAV.forEach(group=>{
+    const wrap = document.createElement('div');
+    if(group.section){
+      const h = document.createElement('div');
+      h.className = 'text-[10px] tracking-wider text-white/35 px-3 mb-1.5 font-bold';
+      h.textContent = group.section;
+      wrap.appendChild(h);
+    }
+    group.items.forEach(it=>{
+      if(it.submenu){
+        const isOpen = openSubmenus[it.key] || isChildActive(it);
+        const parentBtn = document.createElement('button');
+        parentBtn.className = 'nav-item w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 ' + (isChildActive(it) && !isOpen ? 'active' : 'text-white/75');
+        parentBtn.innerHTML = `<span class="text-[13px]">${it.icon}</span><span>${it.label}</span><span class="ml-auto text-[10px] transition-transform ${isOpen?'rotate-90':''}">›</span>`;
+        parentBtn.addEventListener('click', ()=>{ openSubmenus[it.key] = !openSubmenus[it.key]; renderSidebar(); });
+        wrap.appendChild(parentBtn);
+
+        if(isOpen){
+          const subWrap = document.createElement('div');
+          subWrap.className = 'ml-3 pl-3 border-l border-white/10 mt-0.5 space-y-0.5';
+          it.submenu.forEach(sub=>{
+            const subBtn = document.createElement('button');
+            subBtn.className = 'nav-item w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 text-[12.5px] ' + (sub.key===currentKey?'active':'text-white/65');
+            subBtn.innerHTML = `<span class="text-[12px]">${sub.icon}</span><span>${sub.label}</span>`;
+            subBtn.addEventListener('click', ()=>{ currentKey = sub.key; renderSidebar(); renderMain(); });
+            subWrap.appendChild(subBtn);
+          });
+          wrap.appendChild(subWrap);
+        }
+        return;
+      }
+      const btn = document.createElement('button');
+      btn.className = 'nav-item w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 ' + (it.key===currentKey?'active':'text-white/75');
+      btn.innerHTML = `<span class="text-[13px]">${it.icon}</span><span>${it.label}</span>` + (it.soon?'<span class="ml-auto text-[9px] bg-white/10 px-1.5 py-0.5 rounded text-white/50">籌備中</span>':'');
+      btn.addEventListener('click', ()=>{ currentKey = it.key; renderSidebar(); renderMain(); });
+      wrap.appendChild(btn);
+    });
+    nav.appendChild(wrap);
+  });
+}
+
+function renderBrandBanner(){
+  const el = document.getElementById('brand-banner');
+  if(!el) return;
+  const has = brandProfile.name || brandProfile.industry;
+  el.innerHTML = has
+    ? `<span class="font-bold">品牌設定已套用：</span>${brandProfile.name||''} · ${brandProfile.industry||''} · ${brandProfile.tone||''}`
+    : `尚未填寫品牌語氣設定，生成內容會偏通用。<button onclick="openBrandModal()" class="underline font-bold">立即設定</button>`;
+}
+
+/* ============================================================
+   模組設定：每個模組定義欄位 + prompt 組裝方式
+   ============================================================ */
+const MODULES = {
+  positioning: {
+    title:'定位顧問', desc:'釐清你的一句話定位、內容支柱與差異化賣點。', color:'card-gold', maxTokens:900,
+    fields:[
+      {key:'expertise', label:'產業／專業領域', type:'text', placeholder:'例：內容行銷、自媒體經營教學'},
+      {key:'audience', label:'目標受眾', type:'text', placeholder:'例：想經營副業、還沒開始行動的上班族'},
+      {key:'strength', label:'現有優勢／資源', type:'textarea', placeholder:'例：3年自媒體實戰經驗，從0做到10萬粉絲'},
+      {key:'keywords', label:'想打造的形象關鍵字', type:'text', placeholder:'例：真實、接地氣、有方法論'},
+    ],
+    prompt: (v,b)=>`你是資深的個人品牌/IP定位顧問。${b}
+請根據以下資訊，幫這位創作者做IP定位分析：
+產業／專業領域：${v.expertise}
+目標受眾：${v.audience}
+現有優勢／資源：${v.strength}
+想打造的形象關鍵字：${v.keywords}
+
+請輸出以下結構（用清楚的標題分段，不要用markdown的##符號，用純文字標題即可）：
+1. 一句話定位（15字內，具體且有記憶點）
+2. 三大內容支柱（每個支柱一句話說明為什麼要做）
+3. 差異化賣點（跟同業比，這個人贏在哪裡）
+4. 建議的內容語氣方向`
+  },
+  monetization: {
+    title:'變現診斷', desc:'盤點現有變現路徑，找出獲客到轉化的斷點。', color:'card-gold', maxTokens:900,
+    fields:[
+      {key:'current', label:'目前變現方式', type:'textarea', placeholder:'例：線上課程、電子書、一對一諮詢'},
+      {key:'goal', label:'月營收目標', type:'text', placeholder:'例：新台幣30萬'},
+      {key:'product', label:'主推產品／服務', type:'text', placeholder:'例：自媒體經營線上課程'},
+    ],
+    prompt: (v,b)=>`你是內容變現策略顧問。${b}
+目前變現方式：${v.current}
+月營收目標：${v.goal}
+主推產品／服務：${v.product}
+
+請診斷這個變現路徑，輸出：
+1. 目前漏斗可能卡住的環節（推測2-3個最可能的斷點）
+2. 針對每個斷點的具體改善建議
+3. 一個可以立即測試的低成本變現實驗`
+  },
+  platform: {
+    title:'平台策略', desc:'釐清各平台在你內容矩陣中的角色分工。', color:'card-gold', maxTokens:900,
+    fields:[
+      {key:'industry', label:'產業', type:'text', placeholder:'例：線上課程、知識型內容創作'},
+      {key:'audience', label:'目標客群', type:'text', placeholder:'例：想經營副業的25-35歲上班族'},
+      {key:'platforms', label:'目前經營／想經營的平台', type:'text', placeholder:'例：小紅書、IG、Threads、YouTube'},
+    ],
+    prompt: (v,b)=>`你是跨平台內容策略顧問。${b}
+產業：${v.industry}
+目標客群：${v.audience}
+平台：${v.platforms}
+
+請針對列出的每個平台，說明：
+1. 這個平台在整體獲客漏斗中該扮演的角色（例如：認知/信任/轉化）
+2. 建議的內容形式與發布頻率
+3. 平台之間如何互相導流串接`
+  },
+  radar: {
+    title:'靈感雷達', desc:'根據關鍵字與痛點，產出可執行的選題靈感。', color:'card-teal', maxTokens:900,
+    fields:[
+      {key:'keyword', label:'產業關鍵字', type:'text', placeholder:'例：自媒體經營、內容變現'},
+      {key:'pain', label:'想討論的痛點／問題', type:'textarea', placeholder:'例：很多人想經營自媒體卻不知道從哪裡開始'},
+    ],
+    prompt: (v,b)=>`你是內容選題策略師，擅長把痛點轉成有吸引力的選題。${b}
+產業關鍵字：${v.keyword}
+想討論的痛點／問題：${v.pain}
+
+請產出5個具體選題，每個包含：
+- 選題標題（要有鉤子）
+- 適合的平台
+- 一句話說明為什麼受眾會停下來看`
+  },
+  breakdown: {
+    title:'爆款拆解', desc:'貼上連結（YouTube/TikTok可自動抓取）或直接貼文字，拆解爆款內容的結構公式。', color:'card-teal', maxTokens:900,
+    fields:[
+      {key:'content', label:'貼上爆款文案／腳本內容（與上方連結擇一即可）', type:'textarea', placeholder:'貼上你想拆解的文字內容，或留空只用上方連結...', optional:true},
+    ],
+    prompt: (v,b)=>{
+      const hasContent = v.content && v.content.trim();
+      const sourceBlock = hasContent
+        ? `以下是要拆解的內容：\n"""\n${v.content}\n"""`
+        : `這則內容目前只有連結，沒有完整文字內容：\n連結：${v.link || '（未提供）'}\n請根據連結資訊、平台特性與這類內容常見的套路，盡量做結構性推論分析，並在回答開頭提醒使用者：由於沒有完整文案／字幕，這是根據有限資訊做的推測性分析，建議之後補上完整文字內容以提高準確度。`;
+      return `你是內容結構分析師，擅長拆解爆款內容的底層公式。${b}
+${sourceBlock}
+
+請拆解並輸出：
+1. 開頭鉤子手法（用了什麼技巧抓住注意力）
+2. 中段論證邏輯（如何鋪陳說服受眾）
+3. 結尾CTA手法
+4. 可套用的公式模板（用「[填空]」的方式呈現，方便之後套用在其他主題）
+
+注意：請完全用你自己的分析與語言描述，不要逐字複製原文內容。`;
+    }
+  },
+  topicplan: {
+    title:'選題策略', desc:'產出多階段內容矩陣，串起認知到轉化。', color:'card-teal', maxTokens:1100,
+    fields:[
+      {key:'positioning', label:'品牌定位摘要', type:'textarea', placeholder:'例：內容變現教練，幫助上班族打造個人品牌副業'},
+      {key:'goal', label:'內容目標', type:'select', options:['導流至私域','建立專業信任','直接促成轉化','品牌認知擴散']},
+    ],
+    prompt: (v,b)=>`你是內容矩陣策略師。${b}
+品牌定位摘要：${v.positioning}
+內容目標：${v.goal}
+
+請設計一個4階段的內容矩陣（類似認知→興趣→信任→行動的邏輯），每個階段請說明：
+- 階段名稱與目標
+- 適合的平台與內容形式
+- 這階段該埋入的行動呼籲（CTA）
+最後統整成一段簡短的矩陣總覽敘述。`
+  },
+  xhs: {
+    title:'小紅書筆記手', desc:'產出標題、正文與標籤。', color:'card-rose', maxTokens:900,
+    fields:[
+      {key:'topic', label:'主題', type:'text', placeholder:'例：經營自媒體的3個常見迷思'},
+      {key:'selling', label:'核心賣點／訊息', type:'textarea', placeholder:'例：破解「要很會拍才能經營自媒體」的迷思', autoSuggestFrom:'topic'},
+      {key:'tone', label:'語氣', type:'select', options:['真誠分享','專業科普','嗆辣打臉迷思','溫柔陪伴']},
+    ],
+    prompt: (v,b)=>`你是小紅書內容寫手，非常熟悉平台的標題與正文寫作慣性。${b}
+主題：${v.topic}
+核心賣點／訊息：${v.selling}
+語氣：${v.tone}
+
+請產出一篇小紅書筆記，包含：
+1. 標題（吸睛、口語化，適合小紅書風格，可加emoji）
+2. 正文（分段清楚，善用emoji與換行，符合小紅書閱讀習慣）
+3. 5-8個相關標籤`
+  },
+  igpost: {
+    title:'IG貼文文案手', desc:'產出Feed貼文caption與Hashtag組合。', color:'card-rose', maxTokens:900,
+    fields:[
+      {key:'topic', label:'主題', type:'text', placeholder:'例：新課程開賣'},
+      {key:'cta', label:'CTA目標', type:'select', options:['引導留言互動','導流至限動連結','私訊詢問','儲存分享']},
+      {key:'keyword', label:'留言關鍵字（選填，例：我要）', type:'text', placeholder:'例：我要', optional:true, showIf:{key:'cta', value:'引導留言互動'}},
+      {key:'resource', label:'領取資源內容（選填）', type:'text', placeholder:'例：自媒體經營懶人包 PDF', optional:true, showIf:{key:'cta', value:'引導留言互動'}},
+    ],
+    prompt: (v,b)=>{
+      const hasCommentMechanic = v.cta === '引導留言互動' && v.keyword && v.resource;
+      const mechanicNote = hasCommentMechanic
+        ? `\n這則貼文要設計「留言關鍵字領取資源」的互動機制：\n- 留言關鍵字：${v.keyword}\n- 領取資源：${v.resource}\n請在文案中自然引導受眾留言這個關鍵字來領取資源，不要生硬條列，要像正常對話一樣融入文案。`
+        : '';
+      return `你是IG內容文案寫手。${b}
+主題：${v.topic}
+CTA目標：${v.cta}${mechanicNote}
+
+請產出一則IG貼文caption，包含：
+1. 開頭一行吸睛句（要能在限縮預覽下就吸引點開）
+2. 正文（口語、有畫面感，適度分段）
+3. 明確的CTA呼籲句${hasCommentMechanic ? '（要清楚寫出留言關鍵字與領取方式）' : ''}
+4. 8-12個hashtag（大中小流量混搭）`;
+    }
+  },
+  igreels: {
+    title:'IG Reels腳本手', desc:'產出15-60秒短影音腳本，並自動附上可直接發布的貼文文案。', color:'card-rose', maxTokens:1200, outputSplit:'===IG貼文文案===',
+    fields:[
+      {key:'topic', label:'影片主題', type:'text', placeholder:'例：3步驟找到你的內容定位'},
+      {key:'length', label:'影片長度', type:'select', options:['15秒內','15-30秒','30-60秒']},
+      {key:'goal', label:'這支Reels的目標', type:'select', options:['衝觸及／被推薦','建立專業信任','導流至私域','促成購買']},
+    ],
+    prompt: (v,b)=>`你是IG Reels短影音編劇，熟悉Reels演算法偏好的節奏（前3秒鉤子、快節奏轉場、明確價值點）。${b}
+影片主題：${v.topic}
+影片長度：${v.length}
+這支Reels的目標：${v.goal}
+
+請產出：
+1. 前3秒開場鉤子（畫面+口白/字幕文字）
+2. 逐段腳本（列出每段的畫面重點與口白/字幕，控制在指定長度內）
+3. 建議的螢幕文字（on-screen text）重點提示
+4. 結尾CTA
+
+完成以上內容後，換行輸出下面這一整行文字作為分隔線（請完全照抄，不要更動、不要加其他符號）：
+===IG貼文文案===
+
+分隔線之後，直接輸出一段可以「原封不動貼到IG貼文」的caption文字，包含8-12個hashtag（大中小流量混搭），不要重複前面的腳本內容，也不要再加任何標題或說明文字。`
+  },
+  igstory: {
+    title:'IG限動互動手', desc:'產出限時動態的互動貼紙文案與連續frame腳本。', color:'card-rose', maxTokens:800,
+    fields:[
+      {key:'topic', label:'主題', type:'text', placeholder:'例：課程常見問題Q&A'},
+      {key:'interaction', label:'想用的互動元素', type:'select', options:['投票貼紙','問答貼紙','滑動評分','倒數/連結導流']},
+    ],
+    prompt: (v,b)=>`你是IG限時動態內容設計師，熟悉限動的互動貼紙玩法。${b}
+主題：${v.topic}
+想用的互動元素：${v.interaction}
+
+請產出：
+1. 建議的限動frame順序（3-5格，每格說明畫面重點與文字）
+2. 互動貼紙的具體文案（例如投票的兩個選項文字、問答貼紙的提問句）
+3. 最後一格的導流/CTA文案`
+  },
+  igcarousel: {
+    title:'IG圖文卡手', desc:'產出多頁圖文卡，並可直接產生樣板卡片圖片下載。', color:'card-rose', maxTokens:1800, outputMode:'carousel',
+    fields:[
+      {key:'topic', label:'主題', type:'text', placeholder:'例：經營自媒體的3個常見迷思'},
+      {key:'slides', label:'預計頁數', type:'select', options:['5頁','7頁','10頁']},
+    ],
+    prompt: (v,b,count)=>`你是IG圖文卡（carousel）內容設計師。${b}
+主題：${v.topic}
+頁數：${count}頁
+
+請設計 ${count} 頁的圖文卡內容，第1頁是封面（要能讓人想繼續滑），中間是重點內容頁，最後一頁是總結＋CTA。
+
+請「只回傳」一個JSON物件，不要有任何其他文字、說明或markdown code block標記。格式如下：
+{
+  "caption": "適合搭配這組圖文卡發布的IG貼文caption，包含相關hashtag",
+  "slides": [
+    {"role":"cover","headline":"封面標題（15字內）","body":"封面副標或一句引導語"},
+    {"role":"content","headline":"這一頁的小標題","body":"1-2句重點文字"},
+    {"role":"end","headline":"總結標題","body":"總結文字＋明確CTA"}
+  ]
+}
+slides陣列請剛好包含 ${count} 個項目，第1個role為cover，最後1個role為end，中間都是content。`
+  },
+  threads: {
+    title:'Threads互動手', desc:'產出短平快、易引發討論的貼文。', color:'card-rose', maxTokens:600,
+    fields:[
+      {key:'topic', label:'話題／觀點', type:'textarea', placeholder:'例：不是要很會拍才能經營自媒體，內容力比顏值重要'},
+    ],
+    prompt: (v,b)=>`你是Threads內容寫手，擅長寫短、有觀點、容易引發留言討論的貼文。${b}
+話題／觀點：${v.topic}
+
+請產出3則不同角度的Threads短文（每則控制在Threads合適的長度，語氣直球、有觀點甚至帶點嗆辣，結尾留一個容易讓人想留言反駁或認同的鉤子）。`
+  },
+  yt: {
+    title:'YouTube腳本手', desc:'產出分段的口播腳本大綱。', color:'card-rose', maxTokens:1300,
+    fields:[
+      {key:'topic', label:'主題', type:'text', placeholder:'例：我從0到有穩定副業收入的自媒體經營之路'},
+      {key:'length', label:'影片長度', type:'select', options:['1分鐘以內(Shorts)','3-5分鐘','8-12分鐘','15分鐘以上']},
+    ],
+    prompt: (v,b)=>`你是YouTube腳本編劇。${b}
+主題：${v.topic}
+影片長度：${v.length}
+
+請產出腳本大綱，包含：
+1. 開場鉤子（前5-10秒要留住觀眾的一句話或畫面）
+2. 內容主體分段（列出每段的重點與大致口播方向，不用寫逐字稿）
+3. 結尾與CTA（引導訂閱/留言/導流）`
+  },
+  email: {
+    title:'Email轉化手', desc:'產出主旨與轉化導向的信件內文。', color:'card-rose', maxTokens:800,
+    fields:[
+      {key:'product', label:'商品／服務', type:'text', placeholder:'例：自媒體經營線上課程'},
+      {key:'action', label:'目標動作', type:'select', options:['預約諮詢','完成購買','點擊了解更多','回覆信件']},
+    ],
+    prompt: (v,b)=>`你是轉化導向的Email文案寫手。${b}
+商品／服務：${v.product}
+目標動作：${v.action}
+
+請產出：
+1. 3個不同角度的主旨句（提高開信率）
+2. 一封完整的信件內文（有開頭鉤子、價值說明、明確CTA、不要過度銷售感）`
+  },
+
+  /* ---------- 視覺部門 ---------- */
+  cover: {
+    title:'封面設計手', desc:'產出封面標題文案與版面配色建議（文字腳本，非實際圖檔）。', color:'card-lavender', maxTokens:800,
+    fields:[
+      {key:'topic', label:'內容主題', type:'text', placeholder:'例：從0開始的自媒體經營課'},
+      {key:'platform', label:'平台', type:'select', options:['小紅書','IG','YouTube縮圖','Threads']},
+      {key:'mood', label:'想呈現的氛圍', type:'text', placeholder:'例：真實自然、有質感、不浮誇'},
+    ],
+    prompt: (v,b)=>`你是社群封面設計顧問，擅長用文字腳本描述吸睛的封面設計方向（你不會產出實際圖片，只給文字化的設計指引）。${b}
+內容主題：${v.topic}
+平台：${v.platform}
+想呈現的氛圍：${v.mood}
+
+請輸出：
+1. 主標題文案（3個版本，短、有記憶點，適合疊在封面圖上）
+2. 副標題／小標籤文案（1-2個版本）
+3. 建議配色方向（給出具體色系描述，例如「暖米白底＋焦糖橘點綴」）
+4. 版面構圖建議（文字位置、留白、視覺焦點怎麼安排）`
+  },
+  storyboard: {
+    title:'短影音分鏡手', desc:'把主題拆解成鏡頭分鏡表，含畫面/字幕/秒數建議。', color:'card-lavender', maxTokens:1100,
+    fields:[
+      {key:'topic', label:'影片主題', type:'text', placeholder:'例：3步驟找到你的內容定位'},
+      {key:'length', label:'影片長度', type:'select', options:['15秒內','15-30秒','30-60秒','60秒以上']},
+    ],
+    prompt: (v,b)=>`你是短影音分鏡師。${b}
+影片主題：${v.topic}
+影片長度：${v.length}
+
+請用表格化的文字條列產出分鏡腳本，每個鏡頭包含：
+- 鏡頭序號與建議秒數
+- 畫面內容描述（拍什麼、怎麼構圖）
+- 字幕／口白文字
+- 這個鏡頭的目的（抓注意力/建立信任/推進論點/CTA等）`
+  },
+  imgprompt: {
+    title:'AI圖像提示詞手', desc:'產出可直接貼到圖像生成工具的提示詞。', color:'card-lavender', maxTokens:700,
+    fields:[
+      {key:'subject', label:'想生成的畫面主題', type:'textarea', placeholder:'例：溫馨居家辦公桌前錄製線上課程的情境照'},
+      {key:'style', label:'風格偏好', type:'text', placeholder:'例：明亮乾淨、簡約現代風'},
+    ],
+    prompt: (v,b)=>`你是AI圖像生成提示詞工程師，熟悉Midjourney/DALL-E風格提示詞寫法。${b}
+想生成的畫面主題：${v.subject}
+風格偏好：${v.style}
+
+請輸出：
+1. 一組完整的英文圖像生成提示詞（可直接複製貼上使用，包含構圖、光線、風格、質感關鍵字）
+2. 一組簡短的中文提示詞版本
+3. 2個可以微調的變化方向建議`
+  },
+
+  /* ---------- 獲客轉化部門 ---------- */
+  hook: {
+    title:'引流鉤子設計', desc:'產出各平台導流到私域的鉤子話術。', color:'card-sage', maxTokens:800,
+    fields:[
+      {key:'offer', label:'導流誘因', type:'text', placeholder:'例：免費線上課程試看、限時早鳥優惠'},
+      {key:'destination', label:'導流目的地', type:'select', options:['官方LINE','私訊','留言區','連結頁面']},
+    ],
+    prompt: (v,b)=>`你是導流轉化文案專家。${b}
+導流誘因：${v.offer}
+導流目的地：${v.destination}
+
+請產出5句不同風格的引流鉤子話術（可直接用在內容結尾或留言區），每句附上適合的使用情境說明。`
+  },
+  privateD: {
+    title:'私域經營手', desc:'產出LINE/私訊自動回覆與經營SOP。', color:'card-sage', maxTokens:900,
+    fields:[
+      {key:'scenario', label:'情境', type:'select', options:['新加入好友歡迎詞','詢問價格的自動回覆','已讀不回的follow up','活動通知推播']},
+      {key:'context', label:'補充情境說明', type:'textarea', placeholder:'例：對方詢問課程內容，希望先了解需求再推薦適合方案'},
+    ],
+    prompt: (v,b)=>`你是私域經營顧問，擅長設計LINE/私訊的對話SOP。${b}
+情境：${v.scenario}
+補充情境說明：${v.context}
+
+請產出：
+1. 這個情境下建議的訊息文案（1-2個版本）
+2. 對話節奏建議（什麼時候該問問題、什麼時候該給資訊、什麼時候該收尾）`
+  },
+  sales: {
+    title:'銷售成交話術手', desc:'產出異議處理與成交逼單話術。', color:'card-sage', maxTokens:900,
+    fields:[
+      {key:'objection', label:'客戶常見的猶豫／異議', type:'textarea', placeholder:'例：覺得線上課程太貴、想再考慮看看'},
+      {key:'product', label:'商品／服務', type:'text', placeholder:'例：自媒體經營線上課程'},
+    ],
+    prompt: (v,b)=>`你是銷售話術顧問，擅長同理但不強迫的成交溝通方式。${b}
+客戶常見的猶豫／異議：${v.objection}
+商品／服務：${v.product}
+
+請產出：
+1. 同理回應（先接住對方的顧慮，不要直接反駁）
+2. 化解異議的具體話術
+3. 一句自然不強迫的成交推進句`
+  },
+  landing: {
+    title:'落地頁文案手', desc:'產出預約頁／銷售頁的轉化文案結構。', color:'card-sage', maxTokens:1000,
+    fields:[
+      {key:'offer', label:'頁面主打的商品／服務', type:'text', placeholder:'例：線上課程預售頁'},
+      {key:'audience', label:'目標受眾', type:'text', placeholder:'例：對經營自媒體有興趣但還在猶豫的人'},
+    ],
+    prompt: (v,b)=>`你是落地頁轉化文案專家。${b}
+頁面主打的商品／服務：${v.offer}
+目標受眾：${v.audience}
+
+請產出落地頁文案架構，包含：
+1. 主標題與副標題
+2. 痛點／價值主張段落
+3. 信任建立元素建議（例如見證、數據、專業背書該放什麼類型的內容）
+4. 明確的CTA按鈕文案（2個版本）`
+  },
+
+  /* ---------- 數據成效部門 ---------- */
+  contentdiag: {
+    title:'內容成效診斷', desc:'貼上內容數據，AI幫你分析成效與改善方向。', color:'card-sky', maxTokens:900,
+    fields:[
+      {key:'summary', label:'內容主題與大致表現', type:'textarea', placeholder:'例：主題是自媒體經營迷思，曝光8000、按讚120、留言5則、收藏30，低於平均'},
+      {key:'goal', label:'這篇內容原本的目標', type:'select', options:['導流至私域','建立專業信任','直接促成轉化','品牌認知擴散']},
+    ],
+    prompt: (v,b)=>`你是內容數據分析顧問。${b}
+內容主題與大致表現：${v.summary}
+這篇內容原本的目標：${v.goal}
+
+請分析：
+1. 從描述的數據推測，這篇內容可能表現好/不好的原因（合理推測，不要編造精確數字）
+2. 針對目標「${v.goal}」，這篇內容有沒有達標，為什麼
+3. 3個具體的下一步改善建議`
+  },
+  abtest: {
+    title:'A/B測試建議手', desc:'比較兩個版本的標題／鉤子，給測試建議。', color:'card-sky', maxTokens:800,
+    fields:[
+      {key:'versionA', label:'版本A', type:'textarea', placeholder:'貼上第一個標題／鉤子版本'},
+      {key:'versionB', label:'版本B', type:'textarea', placeholder:'貼上第二個標題／鉤子版本'},
+    ],
+    prompt: (v,b)=>`你是內容A/B測試顧問。${b}
+版本A：${v.versionA}
+版本B：${v.versionB}
+
+請分析：
+1. 兩個版本各自的訴求角度與可能吸引的受眾差異
+2. 從內容心理學角度，預測哪個版本可能表現較好，並說明理由（清楚標註這是推測，實際仍需測試）
+3. 建議這次測試該追蹤的關鍵指標，以及測試時要注意控制哪些變因`
+  },
+};
+
+/* ============================================================
+   渲染主內容區
+   ============================================================ */
+function renderMain(){
+  const el = document.getElementById('main-content');
+  const statusBar = document.getElementById('topic-status-bar');
+  if(currentKey !== 'topicbatch' && statusBar) statusBar.classList.add('hidden');
+
+  if(currentKey === 'home'){
+    el.innerHTML = renderHome();
+    renderBrandBanner();
+    refreshPipelineBoard();
+    bindDashboardHandlers();
+    return;
+  }
+  if(currentKey.startsWith('soon-')){
+    el.innerHTML = renderSoon();
+    return;
+  }
+  if(currentKey === 'caccalc'){
+    el.innerHTML = renderCacCalc();
+    document.getElementById('btn-calc').addEventListener('click', runCacCalc);
+    return;
+  }
+  if(currentKey === 'topicbatch'){
+    el.innerHTML = renderTopicBatchPage();
+    attachTopicBatchHandlers();
+    return;
+  }
+  if(currentKey === 'igcarousel'){
+    el.innerHTML = renderCarouselPage();
+    attachCarouselHandlers();
+    return;
+  }
+
+  const mod = MODULES[currentKey];
+  if(!mod){ el.innerHTML = '<div>模組不存在</div>'; return; }
+
+  const isCopyModule = COPY_MODULE_KEYS.has(currentKey);
+  const handoffHtml = (isCopyModule && handoffTopics.length > 0) ? `
+    <div class="mb-5 bg-white/70 border border-dashed border-[#12192B]/25 rounded-xl px-4 py-3">
+      <div class="text-xs font-bold text-[#12192B] mb-2">📋 從選題策劃帶入的選題，點一下套用到「${mod.fields[0] ? mod.fields[0].label : '主題'}」欄位：</div>
+      <div class="flex flex-wrap gap-2">
+        ${handoffTopics.map(t => (t.usedIn && t.usedIn.has(currentKey))
+          ? `<span class="text-xs px-3 py-1.5 rounded-full bg-[#00000010] text-[#999] border border-[#12192B]/10 line-through cursor-not-allowed">${escapeHtml(t.title)}　已套用 ✓</span>`
+          : `<button class="handoff-topic-btn text-xs px-3 py-1.5 rounded-full bg-[var(--card-gold)] border border-[#12192B]/20 hover:border-[var(--accent)] transition" data-title="${escapeHtml(t.title)}" data-tid="${t.id}">${escapeHtml(t.title)}</button>`
+        ).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const fieldsHtml = mod.fields.map(f=>{
+    const wrapClass = f.showIf ? `field-wrap hidden` : `field-wrap`;
+    const wrapAttrs = f.showIf ? `data-show-if-key="${f.showIf.key}" data-show-if-value="${f.showIf.value}"` : '';
+    if(f.type==='textarea'){
+      const suggestBtnHtml = f.autoSuggestFrom
+        ? `<button type="button" class="auto-suggest-btn text-[10px] font-bold text-[#C98A1A] hover:underline" data-key="${f.key}">✨ 根據${escapeHtml((mod.fields.find(x=>x.key===f.autoSuggestFrom)||{}).label || '上一欄')}生成範例</button>`
+        : '';
+      return `<div class="mb-4 ${wrapClass}" ${wrapAttrs}>
+        <div class="flex items-center justify-between gap-2">
+          <label class="text-xs font-bold text-[#333]">${f.label}</label>
+          ${suggestBtnHtml}
+        </div>
+        <textarea id="f-${f.key}" rows="3" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="${f.placeholder||''}"></textarea>
+      </div>`;
+    }
+    if(f.type==='select'){
+      const opts = f.options.map(o=>`<option value="${o}">${o}</option>`).join('');
+      return `<div class="mb-4 ${wrapClass}" ${wrapAttrs}>
+        <label class="text-xs font-bold text-[#333]">${f.label}</label>
+        <select id="f-${f.key}" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm bg-white">${opts}</select>
+      </div>`;
+    }
+    return `<div class="mb-4 ${wrapClass}" ${wrapAttrs}>
+      <label class="text-xs font-bold text-[#333]">${f.label}</label>
+      <input id="f-${f.key}" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="${f.placeholder||''}">
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="mb-5">
+      <h1 class="text-2xl font-black display">${mod.title}</h1>
+      <p class="text-sm text-[#666] mt-1">${mod.desc}</p>
+    </div>
+
+    <div id="brand-banner" class="text-[11px] text-[#665] bg-[#EFE9D6] border border-[#DDD3B0] rounded-lg px-3 py-2 mb-5"></div>
+
+    ${handoffHtml}
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="${mod.color} rounded-2xl p-6 card-note">
+        ${currentKey === 'breakdown' ? `
+        <div class="mb-4 bg-white/60 rounded-lg p-3 border border-dashed border-[#12192B]/25">
+          <label class="text-xs font-bold text-[#333]">貼上連結自動抓取（YouTube可抓完整逐字稿，TikTok僅抓標題）</label>
+          <div class="flex gap-2 mt-1.5">
+            <input id="bd-link" class="field-input flex-1 rounded-md px-3 py-2 text-sm" placeholder="貼上 YouTube 或 TikTok 連結...">
+            <button id="bd-fetch-btn" type="button" class="btn-primary rounded-lg px-4 py-2 text-xs whitespace-nowrap">🔗 抓取</button>
+          </div>
+          <div id="bd-fetch-status" class="text-[11px] text-[#777] mt-1.5">Instagram、小紅書、Threads因平台限制（需登入／無公開介面），暫不支援自動抓取，請直接貼上文字內容到下方欄位。</div>
+          <details class="mt-2">
+            <summary class="text-[11px] text-[#888] cursor-pointer hover:underline">⚙️ 逐字稿後端服務設定（選填，部署後才能抓YouTube完整逐字稿）</summary>
+            <div class="mt-2">
+              <input id="bd-backend-url" class="field-input w-full rounded-md px-3 py-2 text-xs" placeholder="貼上你部署好的Vercel網址，例：https://xxx.vercel.app" value="${ytBackendUrl}">
+              <div class="text-[10px] text-[#999] mt-1">沒有填的話，YouTube連結一樣可以抓標題，只是不會有完整逐字稿。</div>
+            </div>
+          </details>
+        </div>
+        ` : ''}
+        ${fieldsHtml}
+        <button id="btn-generate" class="btn-primary rounded-lg px-5 py-2.5 text-sm mt-2">✨ 生成內容</button>
+      </div>
+
+      <div class="bg-white rounded-2xl p-6 card-note min-h-[240px]">
+        <div class="text-xs font-bold text-[#888] mb-2">${mod.outputSplit ? '生成結果（腳本／頁面內容）' : '生成結果'}</div>
+        <div id="result-area" class="text-sm text-[#222] prose-output">尚未生成，填寫左側欄位後按下「生成內容」。</div>
+        <div class="flex items-center gap-4 mt-4">
+          <button id="btn-copy" class="hidden text-xs underline font-bold">複製內容</button>
+          <button id="btn-regenerate" class="hidden text-xs underline font-bold text-[#C98A1A]">🔄 換一版</button>
+        </div>
+      </div>
+    </div>
+
+    ${mod.outputSplit ? `
+    <div class="bg-[var(--card-gold)] rounded-2xl p-6 card-note mt-6">
+      <div class="text-xs font-bold text-[#12192B] mb-2">📋 可直接貼的IG貼文文案</div>
+      <div id="result-caption-area" class="text-sm text-[#222] prose-output">生成完成後，會自動整理出可以直接複製貼上IG的貼文文案。</div>
+      <button id="btn-copy-caption" class="hidden text-xs mt-4 underline font-bold">複製貼文文案</button>
+    </div>
+    ` : ''}
+
+    <div class="mt-8">
+      <div class="text-xs font-bold text-[#888] mb-2">📜 歷史紀錄（點標題可查看完整內容，最多保留100筆，每頁10筆）</div>
+      <div id="history-section"></div>
+    </div>
+  `;
+
+  renderBrandBanner();
+  wireShowIfFields();
+  wireAutoSuggestFields(mod);
+  document.getElementById('btn-generate').addEventListener('click', ()=>runGenerate(mod));
+  document.getElementById('btn-regenerate').addEventListener('click', ()=>runGenerate(mod, {variation:true}));
+  if(currentKey === 'breakdown'){
+    document.getElementById('bd-fetch-btn').addEventListener('click', runBreakdownLinkFetch);
+    document.getElementById('bd-backend-url').addEventListener('change', (e)=>{
+      ytBackendUrl = e.target.value.trim().replace(/\/$/, '');
+    });
+  }
+  renderHistorySection(mod);
+  if(isCopyModule && mod.fields[0]){
+    document.querySelectorAll('.handoff-topic-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const targetInput = document.getElementById('f-' + mod.fields[0].key);
+        if(targetInput) targetInput.value = btn.getAttribute('data-title');
+
+        const tid = btn.getAttribute('data-tid');
+        const topic = handoffTopics.find(t => t.id === tid);
+        if(topic){
+          if(!topic.usedIn) topic.usedIn = new Set();
+          topic.usedIn.add(currentKey);
+        }
+
+        const usedSpan = document.createElement('span');
+        usedSpan.className = 'text-xs px-3 py-1.5 rounded-full bg-[#00000010] text-[#999] border border-[#12192B]/10 line-through cursor-not-allowed';
+        usedSpan.textContent = btn.getAttribute('data-title') + '　已套用 ✓';
+        btn.replaceWith(usedSpan);
+      });
+    });
+  }
+}
+
+function renderHome(){
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
+  return `
+    <div class="mb-8">
+      <h1 class="text-3xl font-black display">歡迎回來 👋</h1>
+      <p class="text-sm text-[#666] mt-2">今天是 ${dateStr}，適合更新一輪 IP定位、熱門拆解與各平台內容。</p>
+    </div>
+    <div id="brand-banner" class="text-[12px] text-[#665] bg-[#EFE9D6] border border-[#DDD3B0] rounded-lg px-3 py-2.5 mb-8"></div>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="card-gold rounded-2xl p-5 card-note">
+        <div class="font-black mb-1">🎯 IP定位入口</div>
+        <div class="text-xs text-[#333]">釐清定位、變現路徑與平台分工，先想清楚再動筆。</div>
+      </div>
+      <div class="card-teal rounded-2xl p-5 card-note">
+        <div class="font-black mb-1">💡 選題部門</div>
+        <div class="text-xs text-[#333]">抓靈感、拆爆款、排出完整選題矩陣。</div>
+      </div>
+      <div class="card-rose rounded-2xl p-5 card-note">
+        <div class="font-black mb-1">✍️ 文案部門</div>
+        <div class="text-xs text-[#333]">小紅書、IG（貼文/Reels/限動/圖文卡）、Threads、YouTube、Email全平台文案。</div>
+      </div>
+      <div class="card-lavender rounded-2xl p-5 card-note">
+        <div class="font-black mb-1">🎨 視覺部門</div>
+        <div class="text-xs text-[#333]">封面文案、分鏡表、圖像生成提示詞。</div>
+      </div>
+      <div class="card-sage rounded-2xl p-5 card-note">
+        <div class="font-black mb-1">🧲 獲客轉化部門</div>
+        <div class="text-xs text-[#333]">引流鉤子、私域經營、成交話術、落地頁。</div>
+      </div>
+      <div class="card-sky rounded-2xl p-5 card-note">
+        <div class="font-black mb-1">📊 數據成效部門</div>
+        <div class="text-xs text-[#333]">內容診斷、A/B測試建議、獲客成本試算。</div>
+      </div>
+    </div>
+    <div class="mt-6 text-xs text-[#888]">左側導覽列可以切換所有模組，素材與SOP庫等更多功能將於後續版本加入。</div>
+
+    <div class="mt-10">
+      <h2 class="text-lg font-black display mb-1">🚀 內容部署看板</h2>
+      <p class="text-xs text-[#666] mb-4">追蹤每一篇跨平台內容從生成到上線的狀態，狀態可以直接在下方切換。</p>
+      <div id="pipeline-board" class="grid sm:grid-cols-2 md:grid-cols-4 gap-4"></div>
+    </div>
+
+    ${renderDashboardHtml()}
+  `;
+}
+
+/* ============================================================
+   首頁：分析儀表板（依這次瀏覽器session內累積的生成紀錄統計）
+   ============================================================ */
+const MODULE_DEPARTMENT = {
+  positioning:'IP定位入口', monetization:'IP定位入口', platform:'IP定位入口',
+  radar:'選題部門', breakdown:'選題部門', topicplan:'選題部門', topicbatch:'選題部門',
+  xhs:'文案部門', igpost:'文案部門', igreels:'文案部門', igstory:'文案部門', igcarousel:'文案部門', threads:'文案部門', yt:'文案部門', email:'文案部門',
+  cover:'視覺部門', storyboard:'視覺部門', imgprompt:'視覺部門',
+  hook:'獲客轉化部門', privateD:'獲客轉化部門', sales:'獲客轉化部門', landing:'獲客轉化部門',
+  contentdiag:'數據成效部門', abtest:'數據成效部門',
+};
+const DEPARTMENT_ORDER = [
+  { name:'IP定位入口',   color:'var(--card-gold)' },
+  { name:'選題部門',     color:'var(--card-teal)' },
+  { name:'文案部門',     color:'var(--card-rose)' },
+  { name:'視覺部門',     color:'var(--card-lavender)' },
+  { name:'獲客轉化部門', color:'var(--card-sage)' },
+  { name:'數據成效部門', color:'var(--card-sky)' },
+];
+const DEPT_COLOR_MAP = {};
+DEPARTMENT_ORDER.forEach(d => { DEPT_COLOR_MAP[d.name] = d.color; });
+
+/* ============================================================
+   首頁：內容部署看板（追蹤每篇內容 已產生／已儲存／待發佈／已發佈）
+   ============================================================ */
+const PIPELINE_STAGES = [
+  { key:'generated', label:'已產生', color:'var(--card-sky)' },
+  { key:'saved',      label:'已儲存', color:'var(--card-teal)' },
+  { key:'scheduled',  label:'待發佈', color:'var(--card-gold)' },
+  { key:'published',  label:'已發佈', color:'var(--card-sage)' },
+];
+
+function buildPipelineColumnsHtml(){
+  if(historyRecords.length === 0){
+    return `<div class="text-xs text-[#999] bg-white/50 border border-dashed border-[#0000001f] rounded-xl px-4 py-8 text-center sm:col-span-2 md:col-span-4">還沒有生成任何內容，開始使用左側模組後，內容會自動進到這裡追蹤狀態。</div>`;
+  }
+
+  return PIPELINE_STAGES.map(stage=>{
+    const items = historyRecords.filter(r => (r.status || 'generated') === stage.key);
+
+    const cardsHtml = items.length ? items.map(r=>{
+      const dept = MODULE_DEPARTMENT[r.moduleKey] || '其他';
+      const deptShort = dept.replace('部門','').replace('入口','');
+      const showDate = (stage.key === 'scheduled' || stage.key === 'published');
+      return `
+      <div class="bg-white rounded-lg border border-[#12192B]/12 p-3 mb-2">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[9px] font-bold px-2 py-0.5 rounded-full text-[#12192B]" style="background:${DEPT_COLOR_MAP[dept] || '#eee'};">${escapeHtml(deptShort)}</span>
+          <span class="text-[9px] text-[#999]">${formatHistTime(r.time)}</span>
+        </div>
+        <button class="pipeline-card-title text-xs font-medium text-left w-full truncate mb-2 hover:underline" data-id="${r.id}">${escapeHtml(r.moduleTitle)}${r.subtitle ? '｜' + escapeHtml(r.subtitle) : ''}</button>
+        <select class="pipeline-status-select w-full text-[10px] border border-[#12192B]/15 rounded px-1.5 py-1 bg-white ${showDate ? 'mb-1.5' : ''}" data-id="${r.id}">
+          ${PIPELINE_STAGES.map(s => `<option value="${s.key}" ${s.key===stage.key?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+        ${showDate ? `<input type="date" class="pipeline-date-input w-full text-[10px] border border-[#12192B]/15 rounded px-1.5 py-1" data-id="${r.id}" value="${r.publishDate||''}">` : ''}
+      </div>`;
+    }).join('') : `<div class="text-[11px] text-[#bbb] text-center py-6">尚無內容</div>`;
+
+    return `
+    <div class="bg-[#00000005] rounded-xl p-3">
+      <div class="flex items-center justify-between mb-3 px-1">
+        <span class="text-xs font-bold text-[#12192B]">${stage.label}</span>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-[#12192B]" style="background:${stage.color};">${items.length}</span>
+      </div>
+      <div class="max-h-[420px] overflow-y-auto pr-1">${cardsHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function refreshPipelineBoard(){
+  const container = document.getElementById('pipeline-board');
+  if(!container) return;
+  container.innerHTML = buildPipelineColumnsHtml();
+  bindPipelineHandlers();
+}
+
+function bindPipelineHandlers(){
+  document.querySelectorAll('.pipeline-status-select').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const rec = historyRecords.find(r => r.id === sel.getAttribute('data-id'));
+      if(rec) rec.status = sel.value;
+      refreshPipelineBoard();
+    });
+  });
+  document.querySelectorAll('.pipeline-date-input').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const rec = historyRecords.find(r => r.id === inp.getAttribute('data-id'));
+      if(rec) rec.publishDate = inp.value;
+    });
+  });
+  document.querySelectorAll('.pipeline-card-title').forEach(btn=>{
+    btn.addEventListener('click', ()=> openHistoryDetail(btn.getAttribute('data-id')));
+  });
+}
+
+function computeDashboardStats(){
+  const byDept = {};
+  const byModule = {};
+  historyRecords.forEach(r=>{
+    const dept = MODULE_DEPARTMENT[r.moduleKey] || '其他';
+    byDept[dept] = (byDept[dept] || 0) + 1;
+    byModule[r.moduleTitle] = (byModule[r.moduleTitle] || 0) + 1;
+  });
+  let topModule = null, topCount = 0;
+  Object.entries(byModule).forEach(([k, v])=>{ if(v > topCount){ topCount = v; topModule = k; } });
+
+  const topicsGenerated = topicBatchItems.length;
+  const topicsUsedCount = topicBatchItems.filter(t => t.usedIn && t.usedIn.size > 0).length;
+
+  const brandFilled = [brandProfile.name, brandProfile.industry, brandProfile.audience, brandProfile.tone].filter(Boolean).length;
+  const brandPct = Math.round(brandFilled / 4 * 100);
+
+  return { total: historyRecords.length, byDept, topModule, topicsGenerated, topicsUsedCount, brandPct };
+}
+
+function renderDashboardHtml(){
+  const stats = computeDashboardStats();
+  const maxDept = Math.max(1, ...DEPARTMENT_ORDER.map(d => stats.byDept[d.name] || 0));
+
+  const barsHtml = DEPARTMENT_ORDER.map(d=>{
+    const count = stats.byDept[d.name] || 0;
+    const pct = Math.round(count / maxDept * 100);
+    return `
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-[#555] w-24 shrink-0">${d.name}</span>
+      <div class="flex-1 h-3 rounded-full bg-[#00000008] overflow-hidden">
+        <div class="h-full rounded-full transition-all" style="width:${pct}%; background:${d.color};"></div>
+      </div>
+      <span class="text-xs font-bold text-[#333] w-6 text-right shrink-0">${count}</span>
+    </div>`;
+  }).join('');
+
+  const recent = historyRecords.slice(0, 5);
+  const recentHtml = recent.length ? recent.map(r => `
+    <button class="dash-recent-btn w-full text-left px-3 py-2 rounded-lg hover:bg-[#00000006] transition flex items-center justify-between gap-2" data-id="${r.id}">
+      <span class="text-xs font-medium truncate">${escapeHtml(r.moduleTitle)}${r.subtitle ? '｜' + escapeHtml(r.subtitle) : ''}</span>
+      <span class="text-[10px] text-[#999] shrink-0">${formatHistTime(r.time)}</span>
+    </button>
+  `).join('') : `<div class="text-xs text-[#999] px-3 py-6 text-center">還沒有生成紀錄，開始使用左側模組後會顯示在這裡。</div>`;
+
+  return `
+    <div class="mt-10">
+      <h2 class="text-lg font-black display mb-4">📊 分析儀表板</h2>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="card-gold rounded-2xl p-4 card-note">
+          <div class="text-[11px] text-[#333]/70 mb-1">總生成次數</div>
+          <div class="text-2xl font-black display">${stats.total}</div>
+        </div>
+        <div class="card-teal rounded-2xl p-4 card-note">
+          <div class="text-[11px] text-[#333]/70 mb-1">選題已套用</div>
+          <div class="text-2xl font-black display">${stats.topicsUsedCount}<span class="text-xs font-normal"> / ${stats.topicsGenerated}</span></div>
+        </div>
+        <div class="card-rose rounded-2xl p-4 card-note">
+          <div class="text-[11px] text-[#333]/70 mb-1">最常用模組</div>
+          <div class="text-sm font-black display truncate mt-1">${stats.topModule ? escapeHtml(stats.topModule) : '尚無資料'}</div>
+        </div>
+        <div class="card-sky rounded-2xl p-4 card-note">
+          <div class="text-[11px] text-[#333]/70 mb-1">品牌設定完成度</div>
+          <div class="text-2xl font-black display">${stats.brandPct}%</div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl p-5 card-note">
+          <div class="text-xs font-bold text-[#888] mb-3">各部門生成分布</div>
+          <div class="space-y-3">${barsHtml}</div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 card-note">
+          <div class="text-xs font-bold text-[#888] mb-3">最近生成紀錄（點一下查看完整內容）</div>
+          <div class="space-y-1">${recentHtml}</div>
+        </div>
+      </div>
+
+      <div class="text-[11px] text-[#999] mt-3">📌 以上數字統計的是這次瀏覽器session內的使用紀錄，不是真實社群後台數據；重新整理頁面會歸零。</div>
+    </div>
+  `;
+}
+
+function bindDashboardHandlers(){
+  document.querySelectorAll('.dash-recent-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openHistoryDetail(btn.getAttribute('data-id')));
+  });
+}
+
+function renderSoon(){
+  return `
+    <div class="flex flex-col items-center justify-center h-[60vh] text-center">
+      <div class="text-5xl mb-4">🛠️</div>
+      <h2 class="text-xl font-black display mb-1">這個模組正在籌備中</h2>
+      <p class="text-sm text-[#666]">下一版會加入這個功能，敬請期待。</p>
+    </div>
+  `;
+}
+
+function renderCacCalc(){
+  return `
+    <div class="mb-5">
+      <h1 class="text-2xl font-black display">獲客成本試算</h1>
+      <p class="text-sm text-[#666] mt-1">純數字試算工具，不使用AI，即時計算你的內容獲客漏斗關鍵指標。</p>
+    </div>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="card-sky rounded-2xl p-6 card-note">
+        <div class="mb-4">
+          <label class="text-xs font-bold text-[#333]">內容總曝光數</label>
+          <input id="c-impressions" type="number" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：50000">
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-bold text-[#333]">導流至私域的人數（點連結／加LINE等）</label>
+          <input id="c-leads" type="number" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：300">
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-bold text-[#333]">最終成交人數</label>
+          <input id="c-sales" type="number" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：15">
+        </div>
+        <div class="mb-4">
+          <label class="text-xs font-bold text-[#333]">這段期間的內容/廣告總成本（新台幣）</label>
+          <input id="c-cost" type="number" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：20000">
+        </div>
+        <button id="btn-calc" class="btn-primary rounded-lg px-5 py-2.5 text-sm mt-2">🧮 立即試算</button>
+      </div>
+      <div class="bg-white rounded-2xl p-6 card-note min-h-[240px]">
+        <div class="text-xs font-bold text-[#888] mb-3">試算結果</div>
+        <div id="calc-result" class="text-sm text-[#222] space-y-2">填寫左側數字後按下「立即試算」。</div>
+      </div>
+    </div>
+  `;
+}
+
+function runCacCalc(){
+  const imp = parseFloat(document.getElementById('c-impressions').value);
+  const leads = parseFloat(document.getElementById('c-leads').value);
+  const sales = parseFloat(document.getElementById('c-sales').value);
+  const cost = parseFloat(document.getElementById('c-cost').value);
+  const resultEl = document.getElementById('calc-result');
+
+  if([imp,leads,sales,cost].some(n=>isNaN(n) || n < 0) || imp===0){
+    resultEl.innerHTML = `<span class="text-red-600">請完整填寫所有欄位（曝光數需大於0）。</span>`;
+    return;
+  }
+
+  const leadRate = (leads / imp * 100);
+  const closeRate = leads > 0 ? (sales / leads * 100) : 0;
+  const overallRate = (sales / imp * 100);
+  const cac = sales > 0 ? (cost / sales) : null;
+  const costPerLead = leads > 0 ? (cost / leads) : null;
+
+  resultEl.innerHTML = `
+    <div class="flex justify-between border-b border-[#eee] pb-2"><span>導流轉化率（曝光→留資）</span><span class="font-bold">${leadRate.toFixed(2)}%</span></div>
+    <div class="flex justify-between border-b border-[#eee] pb-2"><span>成交轉化率（留資→成交）</span><span class="font-bold">${closeRate.toFixed(2)}%</span></div>
+    <div class="flex justify-between border-b border-[#eee] pb-2"><span>整體轉化率（曝光→成交）</span><span class="font-bold">${overallRate.toFixed(3)}%</span></div>
+    <div class="flex justify-between border-b border-[#eee] pb-2"><span>平均每個名單成本</span><span class="font-bold">${costPerLead!==null? 'NT$'+costPerLead.toFixed(0) : '—'}</span></div>
+    <div class="flex justify-between pb-2"><span>平均獲客成本（CAC）</span><span class="font-bold">${cac!==null? 'NT$'+cac.toFixed(0) : '尚無成交'}</span></div>
+    <div class="text-xs text-[#888] mt-3 pt-3 border-t border-[#eee]">
+      ${closeRate < 5 && leads>0 ? '成交轉化率偏低，可能是留資後的跟進話術或報價流程需要優化，建議搭配「私域經營手」與「銷售成交話術手」調整。' : '整體漏斗數字看起來還算健康，可以持續追蹤趨勢，觀察每次內容發布後的變化。'}
+    </div>
+  `;
+}
+
+/* ============================================================
+   選題策劃：批次生成 + 勾選 + 交給文案部門
+   ============================================================ */
+function renderTopicBatchPage(){
+  return `
+    <div class="mb-5">
+      <h1 class="text-2xl font-black display">選題策劃</h1>
+      <p class="text-sm text-[#666] mt-1">一次生成最多20個選題，勾選最多5個後可以直接交給文案部門套用。</p>
+    </div>
+
+    <div id="brand-banner" class="text-[11px] text-[#665] bg-[#EFE9D6] border border-[#DDD3B0] rounded-lg px-3 py-2 mb-5"></div>
+
+    <div class="card-teal rounded-2xl p-6 card-note mb-6">
+      <div class="grid md:grid-cols-3 gap-4 items-end">
+        <div class="md:col-span-2">
+          <label class="text-xs font-bold text-[#333]">主題方向／關鍵字</label>
+          <input id="tb-direction" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：自媒體經營、內容變現">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-[#333]">生成數量</label>
+          <select id="tb-count" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm bg-white">
+            <option value="5">5個</option>
+            <option value="10">10個</option>
+            <option value="15">15個</option>
+            <option value="20" selected>20個</option>
+          </select>
+        </div>
+      </div>
+      <button id="tb-generate-btn" class="btn-primary rounded-lg px-5 py-2.5 text-sm mt-4">✨ 批次生成選題</button>
+    </div>
+
+    <div id="topic-list-area"></div>
+    <div class="h-20"></div>
+  `;
+}
+
+function attachTopicBatchHandlers(){
+  renderBrandBanner();
+  document.getElementById('tb-generate-btn').addEventListener('click', generateTopicBatch);
+  renderTopicList();
+  updateTopicStatusBar();
+
+  document.getElementById('topic-clear-btn').onclick = clearTopicSelection;
+  document.getElementById('topic-handoff-btn').onclick = handoffToCopyDept;
+  document.getElementById('topic-detail-select-btn').onclick = ()=>{
+    const id = document.getElementById('topic-detail-select-btn').getAttribute('data-id');
+    toggleTopicSelect(id);
+    closeTopicDetail();
+  };
+}
+
+async function generateTopicBatch(){
+  const direction = document.getElementById('tb-direction').value.trim();
+  const count = document.getElementById('tb-count').value;
+  const listArea = document.getElementById('topic-list-area');
+  const genBtn = document.getElementById('tb-generate-btn');
+
+  if(!direction){
+    listArea.innerHTML = `<div class="text-sm text-red-600 px-1">請先填寫主題方向／關鍵字。</div>`;
+    return;
+  }
+
+  genBtn.disabled = true;
+  genBtn.textContent = '生成中...';
+  listArea.innerHTML = `<div class="text-sm loading-dot px-1">正在生成 ${count} 個選題，請稍候...</div>`;
+
+  const promptText = `你是內容選題策劃師。${brandContextString()}
+主題方向／關鍵字：${direction}
+
+請產出 ${count} 個具體的內容選題。每個選題請包含：
+- title：選題標題（要有鉤子，能讓人想點開）
+- type：主題類型（例如：迷思破解、實戰案例、教學攻略、觀點犀利、清單整理、故事分享等，挑一個最貼切的標籤）
+- detail：這個選題的詳細說明（3-4句話，包含適合的內容切入角度、目標受眾痛點、建議適合的平台）
+
+請「只回傳」一個JSON陣列，不要有任何其他文字、說明或markdown code block標記。格式範例：
+[{"title":"...","type":"...","detail":"..."}]`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4000,
+        messages: [{ role: "user", content: promptText }]
+      })
+    });
+    const data = await response.json();
+    let text = (data.content || []).map(b=>b.text || '').join('\n').trim();
+    text = text.replace(/^```json/i, '').replace(/^```/,'').replace(/```$/,'').trim();
+
+    let parsed;
+    try{
+      parsed = JSON.parse(text);
+    }catch(e){
+      listArea.innerHTML = `<div class="text-sm text-red-600 px-1">生成結果解析失敗，請再試一次。</div>`;
+      genBtn.disabled = false;
+      genBtn.textContent = '✨ 批次生成選題';
+      return;
+    }
+
+    topicBatchItems = parsed.slice(0, 20).map((item, idx)=>({
+      id: 'tb' + Date.now() + '_' + idx,
+      number: idx + 1,
+      title: item.title || '（未命名選題）',
+      type: item.type || '一般',
+      detail: item.detail || '',
+      usedIn: new Set()
+    }));
+    selectedTopicIds = new Set();
+    renderTopicList();
+    updateTopicStatusBar();
+  }catch(err){
+    listArea.innerHTML = `<div class="text-sm text-red-600 px-1">生成失敗，請稍後再試。</div>`;
+    console.error(err);
+  }finally{
+    genBtn.disabled = false;
+    genBtn.textContent = '✨ 批次生成選題';
+  }
+}
+
+function renderTopicList(){
+  const listArea = document.getElementById('topic-list-area');
+  if(!listArea) return;
+
+  if(topicBatchItems.length === 0){
+    listArea.innerHTML = `<div class="text-xs text-[#999] bg-white/50 border border-dashed border-[#0000001f] rounded-xl px-4 py-8 text-center">填寫主題方向後按下「批次生成選題」，選題會列在這裡。</div>`;
+    return;
+  }
+
+  const rows = topicBatchItems.map(item=>{
+    const isSelected = selectedTopicIds.has(item.id);
+    const usedCount = item.usedIn ? item.usedIn.size : 0;
+    return `
+    <div class="flex items-center gap-3 bg-white rounded-lg border ${isSelected ? 'border-[var(--accent)]' : 'border-[#12192B]/15'} px-4 py-3">
+      <span class="text-xs font-bold text-[#999] w-6 shrink-0">${item.number}</span>
+      <button class="topic-title-btn flex-1 text-left min-w-0" data-id="${item.id}">
+        <div class="text-sm font-medium truncate">${escapeHtml(item.title)}</div>
+      </button>
+      ${usedCount > 0 ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-[#00000010] text-[#888] shrink-0">已套用 ${usedCount} 處</span>` : ''}
+      <span class="text-[11px] px-2 py-0.5 rounded-full bg-[var(--card-teal)] shrink-0">${escapeHtml(item.type)}</span>
+      <button class="topic-select-btn shrink-0 text-xs px-3 py-1.5 rounded-lg border transition ${isSelected ? 'bg-[var(--accent)] border-[#12192B] font-bold' : 'border-[#12192B]/25 hover:border-[var(--accent)]'}" data-id="${item.id}">
+        ${isSelected ? '已選 ✓' : '選擇'}
+      </button>
+    </div>`;
+  }).join('');
+
+  listArea.innerHTML = `<div class="space-y-2">${rows}</div>`;
+
+  listArea.querySelectorAll('.topic-title-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openTopicDetail(btn.getAttribute('data-id')));
+  });
+  listArea.querySelectorAll('.topic-select-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> toggleTopicSelect(btn.getAttribute('data-id')));
+  });
+}
+
+function toggleTopicSelect(id){
+  if(selectedTopicIds.has(id)){
+    selectedTopicIds.delete(id);
+  }else{
+    if(selectedTopicIds.size >= TOPIC_BATCH_MAX_SELECT){
+      showToast(`最多只能選擇 ${TOPIC_BATCH_MAX_SELECT} 個選題喔，請先取消一個再選新的。`);
+      return;
+    }
+    selectedTopicIds.add(id);
+  }
+  renderTopicList();
+  updateTopicStatusBar();
+}
+
+let toastTimer = null;
+function showToast(msg){
+  let toast = document.getElementById('app-toast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.className = 'fixed top-6 left-1/2 -translate-x-1/2 bg-[#12192B] text-white text-sm px-4 py-2.5 rounded-lg z-50 shadow-lg';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ toast.style.display = 'none'; }, 2200);
+}
+
+function updateTopicStatusBar(){
+  const bar = document.getElementById('topic-status-bar');
+  if(!bar) return;
+  if(topicBatchItems.length === 0){
+    bar.classList.add('hidden');
+    return;
+  }
+  bar.classList.remove('hidden');
+  document.getElementById('topic-selected-count').textContent = selectedTopicIds.size;
+  document.getElementById('topic-total-count').textContent = topicBatchItems.length;
+  const clearBtn = document.getElementById('topic-clear-btn');
+  const handoffBtn = document.getElementById('topic-handoff-btn');
+  const hasSelection = selectedTopicIds.size > 0;
+  clearBtn.disabled = !hasSelection;
+  handoffBtn.disabled = !hasSelection;
+  clearBtn.classList.toggle('opacity-40', !hasSelection);
+  handoffBtn.classList.toggle('opacity-40', !hasSelection);
+}
+
+function clearTopicSelection(){
+  selectedTopicIds = new Set();
+  renderTopicList();
+  updateTopicStatusBar();
+}
+
+function handoffToCopyDept(){
+  if(selectedTopicIds.size === 0) return;
+  handoffTopics = topicBatchItems.filter(item => selectedTopicIds.has(item.id));
+  currentKey = 'xhs';
+  renderSidebar();
+  renderMain();
+}
+
+function openTopicDetail(id){
+  const item = topicBatchItems.find(x => x.id === id);
+  if(!item) return;
+  document.getElementById('topic-detail-title').textContent = item.title;
+  document.getElementById('topic-detail-type').textContent = item.type;
+  document.getElementById('topic-detail-content').textContent = item.detail;
+  const selectBtn = document.getElementById('topic-detail-select-btn');
+  const isSelected = selectedTopicIds.has(item.id);
+  selectBtn.textContent = isSelected ? '取消已選' : '加入已選';
+  selectBtn.setAttribute('data-id', item.id);
+  document.getElementById('topic-detail-modal').classList.remove('hidden');
+}
+function closeTopicDetail(){
+  document.getElementById('topic-detail-modal').classList.add('hidden');
+}
+
+/* ============================================================
+   IG圖文卡手：樣板卡片生成 + PNG下載
+   ============================================================ */
+let carouselSlides = [];
+let carouselCaption = '';
+
+const CARD_ROLE_STYLE = {
+  cover: {
+    bg:   'linear-gradient(150deg, #0F1526 0%, #12192B 45%, #263255 100%)',
+    text: '#F5F1E8',
+    sub:  'rgba(245,241,232,0.62)',
+    accent: 'var(--accent)',
+    kicker: 'COVER · 封面'
+  },
+  content: {
+    bg:   '#FBF8F0',
+    text: '#12192B',
+    sub:  '#5B6472',
+    accent: null,
+    kicker: 'CONTENT · 內容'
+  },
+  end: {
+    bg:   'linear-gradient(150deg, #0F1526 0%, #12192B 45%, #263255 100%)',
+    text: '#F5F1E8',
+    sub:  'rgba(245,241,232,0.62)',
+    accent: 'var(--accent)',
+    kicker: 'CTA · 結尾'
+  },
+};
+const CONTENT_ACCENTS = ['#BFDEDC', '#D9D6ED', '#CDE1EF'];
+
+function renderCarouselPage(){
+  const mod = MODULES['igcarousel'];
+  const isCopyModule = true;
+  const handoffHtml = (handoffTopics.length > 0) ? `
+    <div class="mb-5 bg-white/70 border border-dashed border-[#12192B]/25 rounded-xl px-4 py-3">
+      <div class="text-xs font-bold text-[#12192B] mb-2">📋 從選題策劃帶入的選題，點一下套用到「主題」欄位：</div>
+      <div class="flex flex-wrap gap-2">
+        ${handoffTopics.map(t => (t.usedIn && t.usedIn.has(currentKey))
+          ? `<span class="text-xs px-3 py-1.5 rounded-full bg-[#00000010] text-[#999] border border-[#12192B]/10 line-through cursor-not-allowed">${escapeHtml(t.title)}　已套用 ✓</span>`
+          : `<button class="handoff-topic-btn text-xs px-3 py-1.5 rounded-full bg-[var(--card-gold)] border border-[#12192B]/20 hover:border-[var(--accent)] transition" data-title="${escapeHtml(t.title)}" data-tid="${t.id}">${escapeHtml(t.title)}</button>`
+        ).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  return `
+    <div class="mb-5">
+      <h1 class="text-2xl font-black display">${mod.title}</h1>
+      <p class="text-sm text-[#666] mt-1">${mod.desc}</p>
+    </div>
+
+    <div id="brand-banner" class="text-[11px] text-[#665] bg-[#EFE9D6] border border-[#DDD3B0] rounded-lg px-3 py-2 mb-5"></div>
+
+    ${handoffHtml}
+
+    <div class="${mod.color} rounded-2xl p-6 card-note mb-6">
+      <div class="grid md:grid-cols-3 gap-4 items-end">
+        <div class="md:col-span-2">
+          <label class="text-xs font-bold text-[#333]">主題</label>
+          <input id="cc-topic" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm" placeholder="例：經營自媒體的3個常見迷思">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-[#333]">預計頁數</label>
+          <select id="cc-slides" class="field-input w-full rounded-md px-3 py-2 mt-1 text-sm bg-white">
+            <option value="5">5頁</option>
+            <option value="7">7頁</option>
+            <option value="10">10頁</option>
+          </select>
+        </div>
+      </div>
+      <button id="cc-generate-btn" class="btn-primary rounded-lg px-5 py-2.5 text-sm mt-4">✨ 生成圖文卡內容</button>
+    </div>
+
+    <div id="cc-caption-box" class="bg-white rounded-2xl p-6 card-note mb-6 hidden">
+      <div class="text-xs font-bold text-[#888] mb-2">📋 可直接貼的IG貼文文案</div>
+      <div id="cc-caption-text" class="text-sm text-[#222] prose-output"></div>
+      <button id="cc-copy-caption-btn" class="text-xs mt-4 underline font-bold">複製貼文文案</button>
+    </div>
+
+    <div id="cc-cards-header" class="hidden flex items-center justify-between mb-3">
+      <div class="text-xs font-bold text-[#888]">🖼️ 樣板圖卡預覽（每張都可單獨下載，也可以一次全部下載）</div>
+      <div class="flex items-center gap-2">
+        <button id="cc-regenerate-btn" class="text-xs px-3 py-1.5 rounded-lg border border-[#12192B]/20 hover:border-[var(--accent)] transition font-bold text-[#C98A1A]">🔄 換一版</button>
+        <button id="cc-download-all-btn" class="btn-primary rounded-lg px-4 py-2 text-xs">📥 下載全部圖卡</button>
+      </div>
+    </div>
+    <div id="cc-cards-area" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <div class="mt-8">
+      <div class="text-xs font-bold text-[#888] mb-2">📜 歷史紀錄（點標題可查看完整內容，最多保留100筆，每頁10筆）</div>
+      <div id="history-section"></div>
+    </div>
+  `;
+}
+
+function attachCarouselHandlers(){
+  const mod = MODULES['igcarousel'];
+  renderBrandBanner();
+  document.getElementById('cc-generate-btn').addEventListener('click', ()=>generateCarouselCards());
+  document.getElementById('cc-regenerate-btn').addEventListener('click', ()=>generateCarouselCards({variation:true}));
+  renderHistorySection(mod);
+
+  document.querySelectorAll('.handoff-topic-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const targetInput = document.getElementById('cc-topic');
+      if(targetInput) targetInput.value = btn.getAttribute('data-title');
+
+      const tid = btn.getAttribute('data-tid');
+      const topic = handoffTopics.find(t => t.id === tid);
+      if(topic){
+        if(!topic.usedIn) topic.usedIn = new Set();
+        topic.usedIn.add(currentKey);
+      }
+
+      const usedSpan = document.createElement('span');
+      usedSpan.className = 'text-xs px-3 py-1.5 rounded-full bg-[#00000010] text-[#999] border border-[#12192B]/10 line-through cursor-not-allowed';
+      usedSpan.textContent = btn.getAttribute('data-title') + '　已套用 ✓';
+      btn.replaceWith(usedSpan);
+    });
+  });
+
+  // 若已有先前生成的卡片資料，切回這頁時重新渲染（不用重打API）
+  if(carouselSlides.length > 0){
+    renderCarouselResult(carouselCaption, carouselSlides);
+  }
+}
+
+async function generateCarouselCards(opts={}){
+  const mod = MODULES['igcarousel'];
+  const topic = document.getElementById('cc-topic').value.trim();
+  const count = parseInt(document.getElementById('cc-slides').value, 10);
+  const genBtn = document.getElementById('cc-generate-btn');
+  const regenBtn = document.getElementById('cc-regenerate-btn');
+  const cardsArea = document.getElementById('cc-cards-area');
+  const cardsHeader = document.getElementById('cc-cards-header');
+  const captionBox = document.getElementById('cc-caption-box');
+
+  if(!topic){
+    cardsArea.innerHTML = `<div class="text-sm text-red-600 px-1 col-span-full">請先填寫主題。</div>`;
+    return;
+  }
+
+  genBtn.disabled = true;
+  regenBtn.disabled = true;
+  if(opts.variation){
+    regenBtn.textContent = '換一版中...';
+  }else{
+    genBtn.textContent = '生成中...';
+  }
+  captionBox.classList.add('hidden');
+  if(!opts.variation) cardsHeader.classList.add('hidden');
+  cardsArea.innerHTML = `<div class="text-sm loading-dot px-1 col-span-full">${opts.variation ? '正在生成新的一版，請稍候...' : `正在生成 ${count} 頁圖文卡，請稍候...`}</div>`;
+
+  let promptText = mod.prompt({topic}, brandContextString(), count);
+  if(opts.variation){
+    promptText += `\n\n（這是「換一版」的請求：請提供跟前一版不同的切入角度、標題寫法或文字風格，避免重複相同的表達方式。）`;
+  }
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: mod.maxTokens || 1800,
+        messages: [{ role: "user", content: promptText }]
+      })
+    });
+    const data = await response.json();
+    let text = (data.content || []).map(b=>b.text || '').join('\n').trim();
+    text = text.replace(/^```json/i, '').replace(/^```/,'').replace(/```$/,'').trim();
+
+    let parsed;
+    try{
+      parsed = JSON.parse(text);
+    }catch(e){
+      cardsArea.innerHTML = `<div class="text-sm text-red-600 px-1 col-span-full">生成結果解析失敗，請再試一次。</div>`;
+      genBtn.disabled = false;
+      genBtn.textContent = '✨ 生成圖文卡內容';
+      regenBtn.disabled = false;
+      regenBtn.textContent = '🔄 換一版';
+      return;
+    }
+
+    carouselCaption = parsed.caption || '';
+    carouselSlides = (parsed.slides || []).slice(0, 10);
+    renderCarouselResult(carouselCaption, carouselSlides);
+
+    const summaryText = `【貼文文案】\n${carouselCaption}\n\n【逐頁內容】\n` +
+      carouselSlides.map((s,i)=>`第${i+1}頁（${s.role}）\n標題：${s.headline}\n內容：${s.body}`).join('\n\n');
+    addHistoryRecord(mod, {topic}, summaryText);
+    renderHistorySection(mod);
+  }catch(err){
+    cardsArea.innerHTML = `<div class="text-sm text-red-600 px-1 col-span-full">生成失敗，請稍後再試。</div>`;
+    console.error(err);
+  }finally{
+    genBtn.disabled = false;
+    genBtn.textContent = '✨ 生成圖文卡內容';
+    regenBtn.disabled = false;
+    regenBtn.textContent = '🔄 換一版';
+  }
+}
+
+function renderCarouselResult(caption, slides){
+  const captionBox = document.getElementById('cc-caption-box');
+  const captionText = document.getElementById('cc-caption-text');
+  const cardsHeader = document.getElementById('cc-cards-header');
+  const cardsArea = document.getElementById('cc-cards-area');
+  if(!cardsArea) return;
+
+  if(caption){
+    captionText.textContent = caption;
+    captionBox.classList.remove('hidden');
+    const copyBtn = document.getElementById('cc-copy-caption-btn');
+    copyBtn.onclick = ()=>{
+      navigator.clipboard.writeText(caption);
+      copyBtn.textContent = '已複製 ✓';
+      setTimeout(()=>copyBtn.textContent='複製貼文文案', 1500);
+    };
+  }
+
+  if(slides.length === 0){
+    cardsArea.innerHTML = '';
+    cardsHeader.classList.add('hidden');
+    return;
+  }
+
+  cardsHeader.classList.remove('hidden');
+  const brandTag = (brandProfile.name || 'daxing');
+
+  cardsArea.innerHTML = slides.map((s, idx)=>{
+    const style = CARD_ROLE_STYLE[s.role] || CARD_ROLE_STYLE.content;
+    const accentColor = style.accent || CONTENT_ACCENTS[idx % CONTENT_ACCENTS.length];
+    const isDark = (s.role === 'cover' || s.role === 'end');
+    const ruleColor = isDark ? 'rgba(245,241,232,0.18)' : 'rgba(18,25,43,0.12)';
+    const headline = escapeHtml(s.headline||'');
+    const body = escapeHtml(s.body||'');
+    const bodyBlock = (s.role === 'end')
+      ? `<div class="inline-block px-3 py-2.5 rounded-lg mt-1" style="background:rgba(240,180,41,0.14); border:1px solid var(--accent);">
+           <div class="text-xs leading-relaxed" style="color:${style.text};">${body}</div>
+         </div>`
+      : `<div class="text-xs leading-relaxed" style="color:${style.sub};">${body}</div>`;
+
+    return `
+    <div>
+      <div id="cc-card-${idx}" class="w-full aspect-[4/5] rounded-2xl overflow-hidden relative" style="background:${style.bg};">
+        <div class="absolute -right-6 -bottom-8 text-[150px] leading-none font-black select-none pointer-events-none" style="color:${style.text}; opacity:0.05;">◎</div>
+        ${!isDark ? `<div class="absolute top-0 left-0 right-0 h-[6px]" style="background:${accentColor};"></div>` : ''}
+
+        <div class="relative h-full flex flex-col justify-between p-7">
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] font-bold tracking-[0.15em] uppercase" style="color:${style.sub};">${style.kicker}</span>
+            <span class="text-[9px] font-bold tracking-widest" style="color:${style.sub};">${String(idx+1).padStart(2,'0')} / ${String(slides.length).padStart(2,'0')}</span>
+          </div>
+
+          <div>
+            <div class="w-9 h-[3px] rounded-full mb-3" style="background:${accentColor};"></div>
+            <div class="text-xl font-black display leading-snug mb-2.5" style="color:${style.text};">${headline}</div>
+            ${bodyBlock}
+          </div>
+
+          <div class="flex items-center gap-1.5 pt-3" style="border-top:1px solid ${ruleColor};">
+            <span class="text-[10px] font-black" style="color:${style.accent || accentColor};">◎</span>
+            <span class="text-[9px] font-bold tracking-wide uppercase" style="color:${style.sub};">${escapeHtml(brandTag)}</span>
+          </div>
+        </div>
+      </div>
+      <button class="cc-download-btn w-full text-xs mt-2 px-3 py-1.5 rounded-lg border border-[#12192B]/20 hover:border-[var(--accent)] transition" data-idx="${idx}">下載這張圖片</button>
+    </div>`;
+  }).join('');
+
+  cardsArea.querySelectorAll('.cc-download-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> downloadCarouselCard(parseInt(btn.getAttribute('data-idx'),10)));
+  });
+
+  const downloadAllBtn = document.getElementById('cc-download-all-btn');
+  if(downloadAllBtn) downloadAllBtn.onclick = downloadAllCarouselCards;
+}
+
+function downloadCarouselCard(idx){
+  const el = document.getElementById('cc-card-' + idx);
+  if(!el || typeof html2canvas === 'undefined') return;
+  html2canvas(el, { scale: 3, backgroundColor: null }).then(canvas=>{
+    const link = document.createElement('a');
+    link.download = `圖文卡-第${idx+1}頁.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+}
+
+async function downloadAllCarouselCards(){
+  for(let i = 0; i < carouselSlides.length; i++){
+    downloadCarouselCard(i);
+    await new Promise(r => setTimeout(r, 400));
+  }
+}
+
+/* ============================================================
+   呼叫 Claude API
+   ============================================================ */
+async function runGenerate(mod, opts={}){
+  const values = {};
+  mod.fields.forEach(f=>{ values[f.key] = document.getElementById('f-'+f.key).value; });
+
+  const resultArea = document.getElementById('result-area');
+  const btn = document.getElementById('btn-generate');
+  const regenBtn = document.getElementById('btn-regenerate');
+  const copyBtn = document.getElementById('btn-copy');
+
+  if(currentKey === 'breakdown'){
+    const linkInput = document.getElementById('bd-link');
+    values.link = linkInput ? linkInput.value.trim() : '';
+    if(!values.content.trim() && !values.link.trim()){
+      resultArea.innerHTML = `<span class="text-red-600">請貼上連結，或直接貼上文字內容，兩者擇一即可。</span>`;
+      return;
+    }
+  }
+
+  const missing = mod.fields.filter(f=>!f.optional && (!values[f.key] || !values[f.key].trim()));
+  if(missing.length){
+    resultArea.innerHTML = `<span class="text-red-600">請先填寫「${missing[0].label}」再產生內容。</span>`;
+    return;
+  }
+
+  btn.disabled = true;
+  regenBtn.disabled = true;
+  if(opts.variation){
+    regenBtn.textContent = '換一版中...';
+  }else{
+    btn.textContent = '生成中...';
+  }
+  copyBtn.classList.add('hidden');
+  resultArea.innerHTML = `<span class="loading-dot">${opts.variation ? '正在生成新的一版，請稍候...' : '正在生成內容，請稍候...'}</span>`;
+
+  let promptText = mod.prompt(values, brandContextString());
+  if(opts.variation){
+    promptText += `\n\n（這是「換一版」的請求：請提供跟一般常見寫法不同的切入角度、開頭方式或用詞，避免落入固定套路，讓這一版讀起來有明顯不同的風格。）`;
+  }
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: mod.maxTokens || 1000,
+        messages: [{ role: "user", content: promptText }]
+      })
+    });
+    const data = await response.json();
+    const text = (data.content || []).map(b=>b.text || '').join('\n').trim();
+
+    let mainText = text;
+    let captionText = '';
+    if(mod.outputSplit && text.includes(mod.outputSplit)){
+      const parts = text.split(mod.outputSplit);
+      mainText = parts[0].trim();
+      captionText = parts.slice(1).join(mod.outputSplit).trim();
+    }
+
+    resultArea.textContent = mainText || '沒有取得內容，請再試一次。';
+    resultArea.classList.add('fade-in');
+    copyBtn.classList.remove('hidden');
+    regenBtn.classList.remove('hidden');
+    copyBtn.onclick = ()=>{
+      navigator.clipboard.writeText(mainText);
+      copyBtn.textContent = '已複製 ✓';
+      setTimeout(()=>copyBtn.textContent='複製內容', 1500);
+    };
+
+    if(mod.outputSplit){
+      const captionArea = document.getElementById('result-caption-area');
+      const captionCopyBtn = document.getElementById('btn-copy-caption');
+      if(captionArea){
+        if(captionText){
+          captionArea.textContent = captionText;
+          captionArea.classList.add('fade-in');
+          captionCopyBtn.classList.remove('hidden');
+          captionCopyBtn.onclick = ()=>{
+            navigator.clipboard.writeText(captionText);
+            captionCopyBtn.textContent = '已複製 ✓';
+            setTimeout(()=>captionCopyBtn.textContent='複製貼文文案', 1500);
+          };
+        }else{
+          captionArea.textContent = '沒有偵測到獨立的貼文文案，請參考左側主要內容。';
+          captionCopyBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    if(text){
+      addHistoryRecord(mod, values, text);
+      renderHistorySection(mod);
+    }
+  }catch(err){
+    resultArea.innerHTML = `<span class="text-red-600">生成失敗，請稍後再試。</span>`;
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '✨ 生成內容';
+    regenBtn.disabled = false;
+    regenBtn.textContent = '🔄 換一版';
+  }
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+renderSidebar();
+renderMain();
+</script>
+</body>
+</html>
