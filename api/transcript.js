@@ -51,10 +51,20 @@ export default async function handler(req, res) {
     const splitted = html.split('"captions":');
     if (splitted.length < 2) {
       const hasPlayerResponse = html.includes('ytInitialPlayerResponse');
+      const playabilityMatch = html.match(/"playabilityStatus":\s*\{[^}]*?"status":"([^"]+)"/);
+      const reasonMatch = html.match(/"reason":"([^"]+)"/);
+      const debugInfo = req.query.debug ? {
+        htmlLength: html.length,
+        hasPlayerResponse,
+        playabilityStatus: playabilityMatch ? playabilityMatch[1] : null,
+        reason: reasonMatch ? reasonMatch[1] : null,
+        htmlSnippet: html.slice(0, 300)
+      } : undefined;
       return res.status(404).json({
         error: hasPlayerResponse
-          ? '這部影片沒有偵測到可用的字幕（可能沒有上字幕，或是私人/受限影片）。'
-          : '無法讀取到影片資料，可能暫時被YouTube擋下，請稍後再試一次。'
+          ? '這部影片沒有偵測到可用的字幕（可能沒有上字幕，或是私人/受限影片，也可能是Vercel的伺服器IP被YouTube判定為機器人，回傳了簡化版頁面）。'
+          : '無法讀取到影片資料，可能暫時被YouTube擋下，請稍後再試一次。',
+        debug: debugInfo
       });
     }
 
